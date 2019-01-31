@@ -753,12 +753,17 @@ DefaultFetch<Impl>::doSquash(const TheISA::PCState &newPC,
     DPRINTF(Fetch, "[tid:%i]: Squashing, setting PC to: %s.\n",
             tid, newPC);
     // reset SSN
-    StoreSeqNum SSN = squashInst->SSN;
-    if (squashInst->isStore()){
-      cpu->setSSN(SSN - 1);
-    }
-    else{
-      cpu->setSSN(SSN);
+
+    if (squashInst){
+
+        DPRINTF(SSN,"squash ssn %d.\n",squashInst->SSN);
+        StoreSeqNum SSN = squashInst->SSN;
+        if (squashInst->isStore()){
+                cpu->setSSN(SSN - 1);
+        }
+        else{
+                cpu->setSSN(SSN);
+        }
     }
     pc[tid] = newPC;
     fetchOffset[tid] = 0;
@@ -767,6 +772,7 @@ DefaultFetch<Impl>::doSquash(const TheISA::PCState &newPC,
     else
         macroop[tid] = NULL;
     decoder[tid]->reset();
+
 
     // Clear the icache miss if it's outstanding.
     if (fetchStatus[tid] == IcacheWaitResponse) {
