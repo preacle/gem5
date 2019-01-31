@@ -143,6 +143,9 @@ class BaseDynInst : public ExecContext, public RefCounted
     /** The sequence number of the instruction. */
     InstSeqNum seqNum;
 
+    /** The store sequence number of the instruction. */
+    StoreSeqNum SSN;
+    
     /** The StaticInst used by this BaseDynInst. */
     const StaticInstPtr staticInst;
 

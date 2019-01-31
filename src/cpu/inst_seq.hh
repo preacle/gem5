@@ -42,4 +42,7 @@ typedef uint64_t InstSeqNum;
 // inst tag type, used to tag an operation instance in the IQ
 typedef unsigned int InstTag;
 
+// store instructions squence type,used to order store instructions.
+typedef uint64_t StoreSeqNum;
+
 #endif // __STD_TYPES_HH__

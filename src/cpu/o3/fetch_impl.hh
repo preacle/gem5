@@ -1094,10 +1094,13 @@ DefaultFetch<Impl>::buildInst(ThreadID tid, StaticInstPtr staticInst,
 {
     // Get a sequence number.
     InstSeqNum seq = cpu->getAndIncrementInstSeq();
-
+    if(staticInst->isStore()){
+         cpu->IncrementSSN();
+    }
     // Create a new DynInst from the instruction fetched.
+    StoreSeqNum ssn = cpu->getSSN();
     DynInstPtr instruction =
-        new DynInst(staticInst, curMacroop, thisPC, nextPC, seq, cpu);
+        new DynInst(staticInst, curMacroop, thisPC, nextPC, seq, ssn, cpu);
     instruction->setTid(tid);
 
     instruction->setASID(tid);

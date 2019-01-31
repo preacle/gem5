@@ -362,6 +362,21 @@ class FullO3CPU : public BaseO3CPU
     InstSeqNum getAndIncrementInstSeq()
     { return globalSeqNum++; }
 
+
+    /** Get the current store instruction sequence number**/
+    StoreSeqNum getSSN(){
+       return globalSSN;
+    } 
+    
+    /** Increment SSN **/
+    bool IncrementSSN(){
+       globalSSN++;
+    } 
+    
+   /** Set SSN  **/
+    bool setSSN(StoreSeqNum ssn){
+       globalSSN = ssn; 
+    }
     /** Traps to handle given fault. */
     void trap(const Fault &fault, ThreadID tid, const StaticInstPtr &inst);
 
@@ -715,7 +730,9 @@ class FullO3CPU : public BaseO3CPU
 
     /** The global sequence number counter. */
     InstSeqNum globalSeqNum;//[Impl::MaxThreads];
-
+    
+    /* The global store sequence number counter */
+    StoreSeqNum globalSSN;
     /** Pointer to the checker, which can dynamically verify
      * instruction results at run time.  This can be set to NULL if it
      * is not being used.
