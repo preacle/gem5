@@ -750,7 +750,14 @@ DefaultFetch<Impl>::doSquash(const TheISA::PCState &newPC,
 {
     DPRINTF(Fetch, "[tid:%i]: Squashing, setting PC to: %s.\n",
             tid, newPC);
-
+    // reset SSN
+    StoreSeqNum SSN = squashInst->SSN;
+    if(squashInst.isStore()){
+      cpu->setSSN(SSN - 1);
+    }
+    else{
+      cpu->setSSN(SSN);
+    }
     pc[tid] = newPC;
     fetchOffset[tid] = 0;
     if (squashInst && squashInst->pcState().instAddr() == newPC.instAddr())
