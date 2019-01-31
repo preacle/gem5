@@ -910,7 +910,7 @@ DefaultFetch<Impl>::tick()
     }
 
     DPRINTF(Fetch, "Running stage.\n");
-
+    DPRINTF(SSN,"curSSN is %d\n",cpu->SSN)
     if (FullSystem) {
         if (fromCommit->commitInfo[0].interruptPending) {
             interruptPending = true;
