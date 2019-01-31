@@ -59,13 +59,16 @@
 #include "base/types.hh"
 #include "config/the_isa.hh"
 #include "cpu/base.hh"
+
 //#include "cpu/checker/cpu.hh"
-#include "cpu/o3/fetch.hh"
 #include "cpu/exetrace.hh"
+#include "cpu/o3/fetch.hh"
+#include "cpu/o3/isa_specific.hh"
 #include "debug/Activity.hh"
 #include "debug/Drain.hh"
 #include "debug/Fetch.hh"
 #include "debug/O3PipeView.hh"
+#include "debug/SSN.hh"
 #include "mem/packet.hh"
 #include "params/DerivO3CPU.hh"
 #include "sim/byteswap.hh"
@@ -73,7 +76,6 @@
 #include "sim/eventq.hh"
 #include "sim/full_system.hh"
 #include "sim/system.hh"
-#include "cpu/o3/isa_specific.hh"
 
 using namespace std;
 
@@ -752,7 +754,7 @@ DefaultFetch<Impl>::doSquash(const TheISA::PCState &newPC,
             tid, newPC);
     // reset SSN
     StoreSeqNum SSN = squashInst->SSN;
-    if(squashInst.isStore()){
+    if (squashInst->isStore()){
       cpu->setSSN(SSN - 1);
     }
     else{
@@ -910,7 +912,7 @@ DefaultFetch<Impl>::tick()
     }
 
     DPRINTF(Fetch, "Running stage.\n");
-    DPRINTF(SSN,"curSSN is %d\n",cpu->SSN)
+    DPRINTF(SSN,"curSSN is %d\n",cpu->globalSSN);
     if (FullSystem) {
         if (fromCommit->commitInfo[0].interruptPending) {
             interruptPending = true;

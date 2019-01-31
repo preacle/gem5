@@ -52,8 +52,9 @@ template <class Impl>
 BaseO3DynInst<Impl>::BaseO3DynInst(const StaticInstPtr &staticInst,
                                    const StaticInstPtr &macroop,
                                    TheISA::PCState pc, TheISA::PCState predPC,
-                                   InstSeqNum seq_num, O3CPU *cpu)
-    : BaseDynInst<Impl>(staticInst, macroop, pc, predPC, seq_num, cpu)
+                                   InstSeqNum seq_num, StoreSeqNum ssn,
+                                   O3CPU *cpu)
+    : BaseDynInst<Impl>(staticInst, macroop, pc, predPC, seq_num, ssn, cpu)
 {
     initVars();
 }

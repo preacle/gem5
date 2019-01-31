@@ -422,7 +422,7 @@ class BaseDynInst : public ExecContext, public RefCounted
      */
     BaseDynInst(const StaticInstPtr &staticInst, const StaticInstPtr &macroop,
                 TheISA::PCState pc, TheISA::PCState predPC,
-                InstSeqNum seq_num, ImplCPU *cpu);
+                InstSeqNum seq_num, StoreSeqNum ssn, ImplCPU *cpu);
 
     /** BaseDynInst constructor given a StaticInst pointer.
      *  @param _staticInst The StaticInst for this BaseDynInst.
