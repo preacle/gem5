@@ -120,7 +120,9 @@ class BaseDynInst : public ExecContext, public RefCounted
                                  /// instructions ahead of it
         SerializeAfter,          /// Needs to serialize instructions behind it
         SerializeHandled,        /// Serialization has been handled
+        Reexecuted,
         NumStatus
+
     };
 
     enum Flags {
@@ -136,6 +138,7 @@ class BaseDynInst : public ExecContext, public RefCounted
         IsStrictlyOrdered,
         ReqMade,
         MemOpDone,
+        Reexecute,
         MaxFlags
     };
 
@@ -145,7 +148,7 @@ class BaseDynInst : public ExecContext, public RefCounted
 
     /** The store sequence number of the instruction. */
     StoreSeqNum SSN;
-    
+
     /** The StaticInst used by this BaseDynInst. */
     const StaticInstPtr staticInst;
 
@@ -224,6 +227,10 @@ class BaseDynInst : public ExecContext, public RefCounted
 
     /** Pointer to the data for the memory access. */
     uint8_t *memData;
+
+    /** Pointer to the data for the Reexecute memory access.**/
+
+    uint8_t *reexecute_memData;
 
     /** Load queue index. */
     int16_t lqIdx;
@@ -736,6 +743,13 @@ class BaseDynInst : public ExecContext, public RefCounted
 
     /** Returns whether or not this instruction has executed. */
     bool isExecuted() const { return status[Executed]; }
+
+    /** Sets this instruction as executed. */
+    void setReexecuted() { status.set(Reexecuted);}
+
+    /** Returns whether or not this instruction has Reexecuted. */
+    bool isReexecuted() const { return status[Reexecuted]; }
+
 
     /** Sets this instruction as ready to commit. */
     void setCanCommit() { status.set(CanCommit); }

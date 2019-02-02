@@ -97,6 +97,9 @@ class BaseO3DynInst : public BaseDynInst<Impl>
     /** Executes the instruction.*/
     Fault execute();
 
+    /** Rexecutes the instruction.*/
+    Fault reexecute();
+
     /** Initiates the access.  Only valid for memory operations. */
     Fault initiateAcc();
 
@@ -430,4 +433,3 @@ class BaseO3DynInst : public BaseDynInst<Impl>
 };
 
 #endif // __CPU_O3_ALPHA_DYN_INST_HH__
-

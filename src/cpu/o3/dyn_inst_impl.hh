@@ -145,6 +145,19 @@ BaseO3DynInst<Impl>::execute()
 
 template <class Impl>
 Fault
+BaseO3DynInst<Impl>::reexecute()
+{
+    // @todo: Pretty convoluted way to avoid squashing from happening
+    // when using the TC during an instruction's execution
+    // (specifically for instructions that have side-effects that use
+    // the TC).  Fix this.
+    this->setReexecuted();
+    return this->execute();
+}
+
+
+template <class Impl>
+Fault
 BaseO3DynInst<Impl>::initiateAcc()
 {
     // @todo: Pretty convoluted way to avoid squashing from happening
