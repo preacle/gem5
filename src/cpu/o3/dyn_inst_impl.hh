@@ -151,7 +151,7 @@ BaseO3DynInst<Impl>::reexecute()
     // when using the TC during an instruction's execution
     // (specifically for instructions that have side-effects that use
     // the TC).  Fix this.
-    this->setReexecuted();
+    this->setNeedReexecute(true);
     return this->execute();
 }
 

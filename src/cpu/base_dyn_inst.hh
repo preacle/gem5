@@ -138,7 +138,7 @@ class BaseDynInst : public ExecContext, public RefCounted
         IsStrictlyOrdered,
         ReqMade,
         MemOpDone,
-        Reexecute,
+        NeedReexecute,
         MaxFlags
     };
 
@@ -844,6 +844,14 @@ class BaseDynInst : public ExecContext, public RefCounted
     /**Read the micro PC of this instruction. */
     Addr microPC() const { return pc.microPC(); }
 
+    bool readNeedReexecute(){
+      return instFlags[NeedReexecute];
+    }
+
+    void setNeedReexecute(bool val)
+    {
+      instFlags[NeedReexecute] = val;
+    }
     bool readPredicate()
     {
         return instFlags[Predicate];
