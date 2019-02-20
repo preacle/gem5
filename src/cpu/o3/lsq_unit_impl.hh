@@ -616,6 +616,8 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
 
     assert(!inst->isSquashed());
 
+    // set SSN
+    inst->SSN  = cpu->getRetireSSN();
     load_fault = inst->initiateAcc();
 
     if (inst->isTranslationDelayed() &&

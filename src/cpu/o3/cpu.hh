@@ -368,6 +368,9 @@ class FullO3CPU : public BaseO3CPU
        return globalSSN;
     }
 
+    StoreSeqNum getRetireSSN(){
+       return RetireSSN;
+    }
     /** Increment SSN **/
     void IncrementSSN(){
        globalSSN++;
@@ -376,6 +379,10 @@ class FullO3CPU : public BaseO3CPU
    /** Set SSN  **/
     void setSSN(StoreSeqNum ssn){
        globalSSN = ssn;
+    }
+
+    void setRetireSSN(StoreSeqNum ssn){
+      retireSSN = ssn;
     }
     /** Traps to handle given fault. */
     void trap(const Fault &fault, ThreadID tid, const StaticInstPtr &inst);
@@ -733,6 +740,9 @@ class FullO3CPU : public BaseO3CPU
 
     /* The global store sequence number counter */
     StoreSeqNum globalSSN;
+
+    /* The global store sequence number counter */
+    StoreSeqNum retireSSN;
     /** Pointer to the checker, which can dynamically verify
      * instruction results at run time.  This can be set to NULL if it
      * is not being used.

@@ -1016,6 +1016,7 @@ DefaultCommit<Impl>::commitInsts()
             // Record that the number of ROB entries has changed.
             changedROBNumEntries[tid] = true;
         } else {
+          // TODO
             if (head_inst->isLoad())
             {
               if (!head_inst->readNeedReexecute)
@@ -1041,6 +1042,11 @@ DefaultCommit<Impl>::commitInsts()
             bool commit_success = commitHead(head_inst, num_committed);
 
             if (commit_success) {
+              // update retireSSN
+                if(head_inst->isStore()){
+                  StoreSeqNum SSN = head_inst->SSN;
+                  cpu->setRetireSSN(SSN);
+                }
                 ++num_committed;
                 statCommittedInstType[tid][head_inst->opClass()]++;
                 ppCommit->notify(head_inst);

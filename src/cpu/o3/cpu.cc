@@ -185,6 +185,7 @@ FullO3CPU<Impl>::FullO3CPU(DerivO3CPUParams *params)
 
       globalSeqNum(1),
       globalSSN(1),
+      retireSSN(0),
       system(params->system),
       lastRunningCycle(curCycle())
 {
