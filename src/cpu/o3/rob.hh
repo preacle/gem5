@@ -212,6 +212,9 @@ class ROB
     /** Updates the tail instruction with the new youngest instruction. */
     void updateTail();
 
+    void doReexcute(ThreadID tid);
+
+    void doReexcuteInst(DynInstPtr inst);
     /** Reads the PC of the oldest head instruction. */
 //    uint64_t readHeadPC();
 
@@ -301,6 +304,7 @@ class ROB
      */
     InstIt tail;
 
+    InstIt rehead;
     /** Iterator pointing to the instruction which is the first instruction in
      *  in the ROB*/
     InstIt head;

@@ -136,6 +136,9 @@ class LSQUnit {
      */
     void checkSnoop(PacketPtr pkt);
 
+    /** Reexecutes a load instruction. */
+    Fault ReexecuteLoad(DynInstPtr &inst);
+
     /** Executes a load instruction. */
     Fault executeLoad(DynInstPtr &inst);
 

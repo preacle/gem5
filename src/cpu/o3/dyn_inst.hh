@@ -378,38 +378,115 @@ class BaseO3DynInst : public BaseDynInst<Impl>
      *  registers.
      */
     void setIntRegOperand(const StaticInst *si, int idx, IntReg val)
-    {
-        this->cpu->setIntReg(this->_destRegIdx[idx], val);
-        BaseDynInst<Impl>::setIntRegOperand(si, idx, val);
+    {   uint8_t* temp = &val;
+        if(!this->isLoad()){
+          this->cpu->setFloatReg(this->_destRegIdx[idx], val);
+          BaseDynInst<Impl>::setFloatRegOperand(si, idx, val);
+          return ;
+        }
+        if(!this->isReexecuting()){
+            this->cpu->setIntReg(this->_destRegIdx[idx], val);
+            BaseDynInst<Impl>::setIntRegOperand(si, idx, val);
+            this->memData = new uint8_t[sizeof(IntReg)];
+            memcpy(inst->memData, temp, sizeof(IntReg));
+        }else{
+          for(int i=0; i<sizeof(IntReg); i++){
+            if(*temp != *(this->memData)){
+              this->setSquashed();
+              //TODO : cover the execute
+              return;
+            }
+          }
+        }
     }
 
     void setFloatRegOperand(const StaticInst *si, int idx, FloatReg val)
     {
-        this->cpu->setFloatReg(this->_destRegIdx[idx], val);
-        BaseDynInst<Impl>::setFloatRegOperand(si, idx, val);
+        uint8_t* temp = &val;
+        if(!this->isLoad()){
+            this->cpu->setFloatReg(this->_destRegIdx[idx], val);
+            BaseDynInst<Impl>::setFloatRegOperand(si, idx, val);
+            return ;
+        }
+        if(!this->isReexecuting()){
+            this->cpu->setFloatReg(this->_destRegIdx[idx], val);
+            BaseDynInst<Impl>::setFloatRegOperand(si, idx, val);
+            this->memData = new uint8_t[sizeof(FloatReg)];
+            memcpy(inst->memData, temp, sizeof(FloatReg));
+        }else{
+          for(int i=0; i<sizeof(FloatReg); i++){
+            if(*temp != *(this->memData)){
+              this->setSquashed();
+              //TODO : cover the execute
+              return;
+            }
+          }
+        }
+
     }
 
     void setFloatRegOperandBits(const StaticInst *si, int idx,
                                 FloatRegBits val)
     {
+      uint8_t* temp = &val;
+      if(!this->isLoad()){
         this->cpu->setFloatRegBits(this->_destRegIdx[idx], val);
         BaseDynInst<Impl>::setFloatRegOperandBits(si, idx, val);
+        return ;
+      }
+      if(!this->isReexecuting()){
+        this->cpu->setFloatRegBits(this->_destRegIdx[idx], val);
+        BaseDynInst<Impl>::setFloatRegOperandBits(si, idx, val);
+            this->memData = new uint8_t[sizeof(FloatRegBits)];
+            memcpy(inst->memData, temp, sizeof(FloatRegBits));
+        }else{
+          for(int i=0; i<sizeof(FloatRegBits); i++){
+            if(*temp != *(this->memData)){
+              this->setSquashed();
+              //TODO : cover the execute
+              return;
+            }
+          }
+        }
+
     }
 
     void
     setVecRegOperand(const StaticInst *si, int idx,
                      const VecRegContainer& val)
     {
-        this->cpu->setVecReg(this->_destRegIdx[idx], val);
-        BaseDynInst<Impl>::setVecRegOperand(si, idx, val);
+        if(!this->isLoad()){
+          this->cpu->setVecReg(this->_destRegIdx[idx], val);
+          BaseDynInst<Impl>::setVecRegOperand(si, idx, val);
+          return ;
+        }
+        if(!this->isReexecuting()){
+          this->cpu->setVecReg(this->_destRegIdx[idx], val);
+          BaseDynInst<Impl>::setVecRegOperand(si, idx, val);
+        }else{
+          //TODO
+          panic("No implementation in setVecRegOperand.\n");
+            return ;
+        }
     }
 
     void setVecElemOperand(const StaticInst *si, int idx,
                            const VecElem val)
     {
         int reg_idx = idx;
-        this->cpu->setVecElem(this->_destRegIdx[reg_idx], val);
-        BaseDynInst<Impl>::setVecElemOperand(si, idx, val);
+        if(!this->isLoad()){
+            this->cpu->setVecElem(this->_destRegIdx[reg_idx], val);
+            BaseDynInst<Impl>::setVecElemOperand(si, idx, val);
+            return;
+        }
+        if(!this->isReexecuting()){
+            this->cpu->setVecElem(this->_destRegIdx[reg_idx], val);
+            BaseDynInst<Impl>::setVecElemOperand(si, idx, val);
+        }else{
+          //TODO
+          panic("No implementation in setVecElemOperand.\n");
+          return ;
+        }
     }
 
     void setCCRegOperand(const StaticInst *si, int idx, CCReg val)

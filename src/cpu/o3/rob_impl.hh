@@ -226,6 +226,7 @@ ROB<Impl>::insertInst(DynInstPtr &inst)
     //Set Up head iterator if this is the 1st instruction in the ROB
     if (numInstsInROB == 0) {
         head = instList[tid].begin();
+        rehead = head;
         assert((*head) == inst);
     }
 
@@ -286,7 +287,8 @@ ROB<Impl>::isHeadReady(ThreadID tid)
 {
     robReads++;
     if (threadEntries[tid] != 0) {
-        return instList[tid].front()->readyToCommit();
+        //return instList[tid].front()->readyToCommit();
+        return inistList[tid].front()->readyToFinish();
     }
 
     return false;
@@ -481,6 +483,43 @@ ROB<Impl>::updateTail()
     }
 }
 
+
+template <class Impl>
+void
+ROB<Impl>::doReexcuteInst(ThreadID tid, DynInstPtr inst){
+  // TODO REEXCUTE LOAD INST
+    inst->setExecuting();
+    cpu->ldstQueue.thread[tid].ReexecuteLoad(inst);
+    return;
+}
+
+template <class Impl>
+void
+ROB<Impl>::doReexcute(ThreadID tid)
+{
+    head_it = instList[tid].begin();
+    int MRN = 10;
+    int cntReexcuteNum = 0;
+    while (head_it != instList[tid].end()) {
+       DynInstPtr inst = *head_it;
+       head_it++;
+       if(!inst->readyToCommit() || inst->isSquashed()){
+         return;
+       }
+
+       if(!inst->isLoad() || inst->isReexecuted()){
+         inst->setReexecuted();
+         continue;
+       }
+
+       doReexcuteInst(tid,inst);
+       cntReexcuteNum++;
+       if(cntReexcuteNum == MRN){
+         break;
+       }
+
+    }
+}
 
 template <class Impl>
 void

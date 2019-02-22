@@ -988,6 +988,9 @@ DefaultCommit<Impl>::commitInsts()
 
         ThreadID commit_thread = getCommittingThread();
 
+        // doReexcute
+        rob->doReexcute(commit_thread);
+
         if (commit_thread == -1 || !rob->isHeadReady(commit_thread))
             break;
 
@@ -1016,19 +1019,6 @@ DefaultCommit<Impl>::commitInsts()
             // Record that the number of ROB entries has changed.
             changedROBNumEntries[tid] = true;
         } else {
-          // TODO
-            if (head_inst->isLoad())
-            {
-              if (!head_inst->readNeedReexecute)
-              {
-                head_inst->reexecute();
-                break;
-              }
-              if(!head_inst->isReexecuted())
-              {
-                break;
-              }
-            }
             pc[tid] = head_inst->pcState();
 
             // Increment the total number of non-speculative instructions

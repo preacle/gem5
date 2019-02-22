@@ -601,7 +601,29 @@ LSQUnit<Impl>::checkViolations(int load_idx, DynInstPtr &inst)
 }
 
 
+template <class Impl>
+Fault
+LSQUnit<Impl>::ReexecuteLoad(DynInstPtr &inst)
+{
+    using namespace TheISA;
+    // Execute a specific load.
+    Fault load_fault = NoFault;
 
+    DPRINTF(LSQUnit, "Reexecuting load PC %s, [sn:%lli]\n",
+            inst->pcState(), inst->seqNum);
+
+    assert(!inst->isSquashed());
+
+    // todo:copy olddata
+
+    load_fault = inst->initiateAcc();
+
+    if (inst->isTranslationDelayed() &&
+        load_fault == NoFault)
+        return load_fault;
+
+    return load_fault;
+}
 
 template <class Impl>
 Fault
@@ -1135,6 +1157,12 @@ LSQUnit<Impl>::writeback(DynInstPtr &inst, PacketPtr pkt)
             DPRINTF(LSQUnit, "Not completing instruction [sn:%lli] access "
                     "due to pending fault.\n", inst->seqNum);
         }
+    }
+
+    if(inst->isReexecuting()) {
+        inst->completeAcc(pkt);
+        inst->setReexecuted();
+        return ;
     }
 
     // Need to insert instruction into queue to commit

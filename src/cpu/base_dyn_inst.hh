@@ -121,6 +121,7 @@ class BaseDynInst : public ExecContext, public RefCounted
         SerializeAfter,          /// Needs to serialize instructions behind it
         SerializeHandled,        /// Serialization has been handled
         Reexecuted,
+        Reexecuting,
         NumStatus
 
     };
@@ -750,6 +751,11 @@ class BaseDynInst : public ExecContext, public RefCounted
     /** Returns whether or not this instruction has Reexecuted. */
     bool isReexecuted() const { return status[Reexecuted]; }
 
+    /** Sets this instruction as executed. */
+    void setReexecuting() { status.set(Reexecuting);}
+
+    /** Returns whether or not this instruction has Reexecuted. */
+    bool isReexecuting() const { return status[Reexecuting]; }
 
     /** Sets this instruction as ready to commit. */
     void setCanCommit() { status.set(CanCommit); }
@@ -759,6 +765,8 @@ class BaseDynInst : public ExecContext, public RefCounted
 
     /** Returns whether or not this instruction is ready to commit. */
     bool readyToCommit() const { return status[CanCommit]; }
+
+    bool readyToFinish() const { return status[CanCommit]&status[Reexecuted]; }
 
     void setAtCommit() { status.set(AtCommit); }
 
