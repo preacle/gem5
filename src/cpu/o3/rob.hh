@@ -214,7 +214,7 @@ class ROB
 
     void doReexcute(ThreadID tid);
 
-    void doReexcuteInst(DynInstPtr inst);
+    void doReexcuteInst(ThreadID tid, DynInstPtr inst);
     /** Reads the PC of the oldest head instruction. */
 //    uint64_t readHeadPC();
 

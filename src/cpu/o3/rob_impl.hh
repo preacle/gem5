@@ -288,7 +288,7 @@ ROB<Impl>::isHeadReady(ThreadID tid)
     robReads++;
     if (threadEntries[tid] != 0) {
         //return instList[tid].front()->readyToCommit();
-        return inistList[tid].front()->readyToFinish();
+        return instList[tid].front()->readyToFinish();
     }
 
     return false;
@@ -497,7 +497,7 @@ template <class Impl>
 void
 ROB<Impl>::doReexcute(ThreadID tid)
 {
-    head_it = instList[tid].begin();
+    InstIt head_it = instList[tid].begin();
     int MRN = 10;
     int cntReexcuteNum = 0;
     while (head_it != instList[tid].end()) {
