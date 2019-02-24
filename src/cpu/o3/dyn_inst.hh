@@ -380,8 +380,8 @@ class BaseO3DynInst : public BaseDynInst<Impl>
     void setIntRegOperand(const StaticInst *si, int idx, IntReg val)
     {   uint8_t* temp = reinterpret_cast<uint8_t*>(&val);
         if(!this->isLoad()){
-          this->cpu->setFloatReg(this->_destRegIdx[idx], val);
-          BaseDynInst<Impl>::setFloatRegOperand(si, idx, val);
+          this->cpu->setIntReg(this->_destRegIdx[idx], val);
+          BaseDynInst<Impl>::setIntRegOperand(si, idx, val);
           return ;
         }
         if(!this->isReexecuting()){
