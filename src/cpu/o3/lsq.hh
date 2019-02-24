@@ -306,12 +306,12 @@ class LSQ {
     /** The IEW stage pointer. */
     IEW *iewStage;
 
+    /** The LSQ units for individual threads. */
+    LSQUnit *thread;
+
   protected:
     /** The LSQ policy for SMT mode. */
     LSQPolicy lsqPolicy;
-
-    /** The LSQ units for individual threads. */
-    LSQUnit *thread;
 
     /** List of Active Threads in System. */
     std::list<ThreadID> *activeThreads;
