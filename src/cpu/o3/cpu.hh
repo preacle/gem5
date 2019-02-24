@@ -369,7 +369,7 @@ class FullO3CPU : public BaseO3CPU
     }
 
     StoreSeqNum getRetireSSN(){
-       return RetireSSN;
+       return retireSSN;
     }
     /** Increment SSN **/
     void IncrementSSN(){
