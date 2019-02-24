@@ -488,8 +488,8 @@ template <class Impl>
 void
 ROB<Impl>::doReexcuteInst(ThreadID tid, DynInstPtr inst){
   // TODO REEXCUTE LOAD INST
-    inst->setExecuting();
-    cpu->ldstQueue.thread[tid].ReexecuteLoad(inst);
+    inst->setReexecuting();
+    cpu->iew.ldstQueue.thread[tid].ReexecuteLoad(inst);
     return;
 }
 
