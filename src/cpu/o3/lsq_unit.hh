@@ -562,7 +562,7 @@ LSQUnit<Impl>::read(const RequestPtr &req,
 
     assert(load_inst);
 
-    assert(!load_inst->isExecuted());
+    //assert(!load_inst->isExecuted());
 
     // Make sure this isn't a strictly ordered load
     // A bit of a hackish way to get strictly ordered accesses to work
@@ -570,7 +570,9 @@ LSQUnit<Impl>::read(const RequestPtr &req,
     // (at the head of the ROB too).
     if (req->isStrictlyOrdered() &&
         (load_idx != loadHead || !load_inst->isAtCommit())) {
+
         iewStage->rescheduleMemInst(load_inst);
+
         ++lsqRescheduledLoads;
         DPRINTF(LSQUnit, "Strictly ordered load [sn:%lli] PC %s\n",
                 load_inst->seqNum, load_inst->pcState());

@@ -81,7 +81,7 @@ class BaseO3DynInst : public BaseDynInst<Impl>
         MaxInstSrcRegs = TheISA::MaxInstSrcRegs,        //< Max source regs
         MaxInstDestRegs = TheISA::MaxInstDestRegs       //< Max dest regs
     };
-
+  std::list<uint8_t*> memDataBuf;
   public:
     /** BaseDynInst constructor given a binary instruction. */
     BaseO3DynInst(const StaticInstPtr &staticInst, const StaticInstPtr
@@ -387,12 +387,18 @@ class BaseO3DynInst : public BaseDynInst<Impl>
         if(!this->isReexecuting()){
             this->cpu->setIntReg(this->_destRegIdx[idx], val);
             BaseDynInst<Impl>::setIntRegOperand(si, idx, val);
-            this->memData = new uint8_t[sizeof(IntReg)];
-            memcpy(this->memData, temp, sizeof(IntReg));
+            this->reexecute_memData = new uint8_t[sizeof(IntReg)];
+            memcpy(this->reexecute_memData, temp, sizeof(IntReg));
+            memDataBuf.push_back(this->reexecute_memData);
+            return ;
         }else{
-          for(int i=0; i<sizeof(IntReg); i++){
-            if(*temp != *(this->memData)){
-              this->setSquashed();
+          this->reexecute_memData = memDataBuf.front();
+          memDataBuf.pop_front();
+          for (int i=0; i<sizeof(IntReg); i++){
+            if (*temp != *(this->reexecute_memData)){
+              std::cout<<"setIntRegOperand : need squash"<<std::endl;
+              this->dump();
+              //this->setSquashed();
               //TODO : cover the execute
               return;
             }
@@ -411,12 +417,16 @@ class BaseO3DynInst : public BaseDynInst<Impl>
         if(!this->isReexecuting()){
             this->cpu->setFloatReg(this->_destRegIdx[idx], val);
             BaseDynInst<Impl>::setFloatRegOperand(si, idx, val);
-            this->memData = new uint8_t[sizeof(FloatReg)];
-            memcpy(this->memData, temp, sizeof(FloatReg));
+            this->reexecute_memData = new uint8_t[sizeof(FloatReg)];
+            memcpy(this->reexecute_memData, temp, sizeof(FloatReg));
+            memDataBuf.push_back(this->reexecute_memData);
         }else{
-          for(int i=0; i<sizeof(FloatReg); i++){
-            if(*temp != *(this->memData)){
-              this->setSquashed();
+          this->reexecute_memData = memDataBuf.front();
+          memDataBuf.pop_front();
+          for (int i=0; i<sizeof(FloatReg); i++){
+            if (*temp != *(this->reexecute_memData)){
+              std::cout<<"setFloatRegOperand : need squash"<<std::endl;
+              //this->setSquashed();
               //TODO : cover the execute
               return;
             }
@@ -437,11 +447,15 @@ class BaseO3DynInst : public BaseDynInst<Impl>
       if(!this->isReexecuting()){
         this->cpu->setFloatRegBits(this->_destRegIdx[idx], val);
         BaseDynInst<Impl>::setFloatRegOperandBits(si, idx, val);
-            this->memData = new uint8_t[sizeof(FloatRegBits)];
-            memcpy(this->memData, temp, sizeof(FloatRegBits));
+            this->reexecute_memData = new uint8_t[sizeof(FloatRegBits)];
+            memcpy(this->reexecute_memData, temp, sizeof(FloatRegBits));
+            memDataBuf.push_back(this->reexecute_memData);
         }else{
-          for(int i=0; i<sizeof(FloatRegBits); i++){
-            if(*temp != *(this->memData)){
+          this->reexecute_memData = memDataBuf.front();
+          memDataBuf.pop_front();
+          for (int i=0; i<sizeof(FloatRegBits); i++){
+            if (*temp != *(this->reexecute_memData)){
+              std::cout<<"setFloatRegOperand : need squash"<<std::endl;
               this->setSquashed();
               //TODO : cover the execute
               return;
@@ -491,8 +505,14 @@ class BaseO3DynInst : public BaseDynInst<Impl>
 
     void setCCRegOperand(const StaticInst *si, int idx, CCReg val)
     {
+
+      //todo
+        if (this->isReexecuting())
+          return;
         this->cpu->setCCReg(this->_destRegIdx[idx], val);
         BaseDynInst<Impl>::setCCRegOperand(si, idx, val);
+
+
     }
 
 #if THE_ISA == MIPS_ISA

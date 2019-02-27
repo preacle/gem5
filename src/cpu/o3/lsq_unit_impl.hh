@@ -621,7 +621,6 @@ LSQUnit<Impl>::ReexecuteLoad(DynInstPtr &inst)
     if (inst->isTranslationDelayed() &&
         load_fault == NoFault)
         return load_fault;
-
     return load_fault;
 }
 
@@ -1142,7 +1141,6 @@ LSQUnit<Impl>::writeback(DynInstPtr &inst, PacketPtr pkt)
 
     if (!inst->isExecuted()) {
         inst->setExecuted();
-
         if (inst->fault == NoFault) {
             // Complete access to copy data to proper place.
             inst->completeAcc(pkt);
@@ -1160,8 +1158,12 @@ LSQUnit<Impl>::writeback(DynInstPtr &inst, PacketPtr pkt)
     }
 
     if(inst->isReexecuting()) {
+        //printf("reex finshed-----------\n");
+        //inst->dump();
         inst->completeAcc(pkt);
         inst->setReexecuted();
+        inst->setCanCommit();
+        iewStage->activityThisCycle();
         return ;
     }
 

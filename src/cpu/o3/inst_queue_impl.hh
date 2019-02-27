@@ -955,13 +955,9 @@ InstructionQueue<Impl>::scheduleNonSpec(const InstSeqNum &inst)
             "to execute.\n", inst);
 
     NonSpecMapIt inst_it = nonSpecInsts.find(inst);
-
     assert(inst_it != nonSpecInsts.end());
-
     ThreadID tid = (*inst_it).second->threadNumber;
-
     (*inst_it).second->setAtCommit();
-
     (*inst_it).second->setCanIssue();
 
     if (!(*inst_it).second->isMemRef()) {
@@ -969,9 +965,7 @@ InstructionQueue<Impl>::scheduleNonSpec(const InstSeqNum &inst)
     } else {
         memDepUnit[tid].nonSpecInstReady((*inst_it).second);
     }
-
     (*inst_it).second = NULL;
-
     nonSpecInsts.erase(inst_it);
 }
 

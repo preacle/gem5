@@ -95,6 +95,18 @@ testPredicate(uint32_t nz, uint32_t c, uint32_t v, ConditionCode code)
     }
 }
 
+inline bool
+testPredicate(uint32_t nz, uint32_t c, uint32_t v, ConditionCode code,
+  int& testLast)
+{
+    if (testLast != -1){
+      return  testLast;
+    }
+    testLast = testPredicate(nz, c, v, code);
+    return testLast;
+}
+
+
 /**
  * Function to insure ISA semantics about 0 registers.
  * @param tc The thread context.

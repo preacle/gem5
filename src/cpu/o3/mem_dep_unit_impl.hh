@@ -378,6 +378,10 @@ template <class MemDepPred, class Impl>
 void
 MemDepUnit<MemDepPred, Impl>::reschedule(DynInstPtr &inst)
 {
+    if (inst->isReexecuting()){
+      instsToReplay.push_front(inst);
+      return;
+    }
     instsToReplay.push_back(inst);
 }
 

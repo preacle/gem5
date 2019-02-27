@@ -287,6 +287,18 @@ ROB<Impl>::isHeadReady(ThreadID tid)
 {
     robReads++;
     if (threadEntries[tid] != 0) {
+        return instList[tid].front()->readyToCommit();
+    }
+
+    return false;
+}
+
+template <class Impl>
+bool
+ROB<Impl>::isHeadFinish(ThreadID tid)
+{
+    robReads++;
+    if (threadEntries[tid] != 0) {
         //return instList[tid].front()->readyToCommit();
         return instList[tid].front()->readyToFinish();
     }
@@ -488,8 +500,24 @@ template <class Impl>
 void
 ROB<Impl>::doReexcuteInst(ThreadID tid, DynInstPtr inst){
   // TODO REEXCUTE LOAD INST
+    if (inst->reexecute_memData == nullptr){
+      inst->setReexecuted();
+      return ;
+    }
+    if (inst->isReexecuting()){
+      return ;
+    }
+    delete inst->memData;
+    inst->memData = nullptr;
+    Fault load_fault = NoFault;
+
+  //  inst->dump();
+    inst->translationStarted(false);
+    inst->translationCompleted(false);
     inst->setReexecuting();
-    cpu->iew.ldstQueue.thread[tid].ReexecuteLoad(inst);
+    //inst->setReexecuted();
+    load_fault = cpu->iew.ldstQueue.thread[tid].ReexecuteLoad(inst);
+  //  std::cout<<"load_fault == NoFault:"<<(load_fault == NoFault)<<std::endl;
     return;
 }
 
@@ -500,21 +528,36 @@ ROB<Impl>::doReexcute(ThreadID tid)
     InstIt head_it = instList[tid].begin();
     int MRN = 10;
     int cntReexcuteNum = 0;
+    if (instList[tid].empty())
+      return;
     while (head_it != instList[tid].end()) {
        DynInstPtr inst = *head_it;
        head_it++;
-       if(!inst->readyToCommit() || inst->isSquashed()){
+
+       //std::cout<<"doReexcute:"<<cntReexcuteNum<<endl;
+       if (!inst->readyToCommit()){
          return;
        }
-
-       if(!inst->isLoad() || inst->isReexecuted()){
+       if (inst->isSquashed()||inst->isNonSpeculative()||inst->isMemBarrier()
+          ||inst->isWriteBarrier()||inst->isStore()){
+         inst->setReexecuted();
+         return;
+       }
+       //if (!inst->readPredicate()||inst->isControl()||
+       //inst->isMacroop()||inst->isMicroop()||inst->isAtomic()){
+       if (!inst->readPredicate()){
          inst->setReexecuted();
          continue;
        }
-
-       doReexcuteInst(tid,inst);
-       cntReexcuteNum++;
-       if(cntReexcuteNum == MRN){
+       if (inst->isLoad() && !inst->isReexecuted()){
+         doReexcuteInst(tid,inst);
+         cntReexcuteNum++;
+         continue;
+       }
+       inst->setReexecuted();
+//       inst->setReexecuted();
+       //std::cout<<cntReexcuteNum<<std::endl;
+       if (cntReexcuteNum == MRN){
          break;
        }
 

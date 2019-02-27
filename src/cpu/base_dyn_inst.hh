@@ -65,6 +65,7 @@
 #include "cpu/op_class.hh"
 #include "cpu/static_inst.hh"
 #include "cpu/translation.hh"
+#include "debug/Reexecute.hh"
 #include "mem/packet.hh"
 #include "mem/request.hh"
 #include "sim/byteswap.hh"
@@ -149,6 +150,7 @@ class BaseDynInst : public ExecContext, public RefCounted
 
     /** The store sequence number of the instruction. */
     StoreSeqNum SSN;
+
 
     /** The StaticInst used by this BaseDynInst. */
     const StaticInstPtr staticInst;
@@ -766,7 +768,9 @@ class BaseDynInst : public ExecContext, public RefCounted
     /** Returns whether or not this instruction is ready to commit. */
     bool readyToCommit() const { return status[CanCommit]; }
 
-    bool readyToFinish() const { return status[CanCommit]&status[Reexecuted]; }
+    //bool readyToFinish() const
+    // { return status[CanCommit]&status[Reexecuted]; }
+    bool readyToFinish() const { return status[Reexecuted]; }
 
     void setAtCommit() { status.set(AtCommit); }
 
@@ -926,16 +930,20 @@ Fault
 BaseDynInst<Impl>::initiateMemRead(Addr addr, unsigned size,
                                    Request::Flags flags)
 {
+    DPRINTF(Reexecute,"Reexecute-initiateMemRead-1\n");
     instFlags[ReqMade] = true;
     RequestPtr req = NULL;
     RequestPtr sreqLow = NULL;
     RequestPtr sreqHigh = NULL;
 
     if (instFlags[ReqMade] && translationStarted()) {
+        DPRINTF(Reexecute,"Reexecute-initiateMemRead-2\n");
         req = savedReq;
         sreqLow = savedSreqLow;
         sreqHigh = savedSreqHigh;
+        DPRINTF(Reexecute,"Reexecute-initiateMemRead-2-2\n");
     } else {
+      DPRINTF(Reexecute,"Reexecute-initiateMemRead-3\n");
         req = std::make_shared<Request>(
             asid, addr, size, flags, masterId(),
             this->pc.instAddr(), thread->contextId());
@@ -946,15 +954,20 @@ BaseDynInst<Impl>::initiateMemRead(Addr addr, unsigned size,
         if (TheISA::HasUnalignedMemAcc) {
             splitRequest(req, sreqLow, sreqHigh);
         }
+        DPRINTF(Reexecute,"Reexecute-initiateMemRead-3-2\n");
         initiateTranslation(req, sreqLow, sreqHigh, NULL, BaseTLB::Read);
+        DPRINTF(Reexecute,"Reexecute-initiateMemRead-3-3\n");
     }
 
     if (translationCompleted()) {
+      DPRINTF(Reexecute,"Reexecute-initiateMemRead-4\n");
         if (fault == NoFault) {
+          DPRINTF(Reexecute,"Reexecute-initiateMemRead-4-1\n");
             effAddr = req->getVaddr();
+            DPRINTF(Reexecute,"Reexecute-initiateMemRead-4-2\n");
             effSize = size;
             instFlags[EffAddrValid] = true;
-
+            DPRINTF(Reexecute,"Reexecute-initiateMemRead-4-3\n");
             if (cpu->checker) {
                 reqToVerify = std::make_shared<Request>(*req);
             }
@@ -968,7 +981,7 @@ BaseDynInst<Impl>::initiateMemRead(Addr addr, unsigned size,
 
     if (traceData)
         traceData->setMem(addr, size, flags);
-
+  DPRINTF(Reexecute,"Reexecute-initiateMemRead-5\n");
     return fault;
 }
 

@@ -82,6 +82,7 @@ class ExecContext {
     using VecRegContainer = TheISA::VecRegContainer;
     using VecElem = TheISA::VecElem;
 
+    int testLast = -1;
   public:
     /**
      * @{

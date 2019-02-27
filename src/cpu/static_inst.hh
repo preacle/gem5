@@ -118,6 +118,7 @@ class StaticInst : public RefCounted, public StaticInstFlags
     /// file.
     //@{
     /// Number of source registers.
+
     int8_t numSrcRegs()  const { return _numSrcRegs; }
     /// Number of destination registers.
     int8_t numDestRegs() const { return _numDestRegs; }
@@ -251,7 +252,7 @@ class StaticInst : public RefCounted, public StaticInstFlags
           _numFPDestRegs(0), _numIntDestRegs(0), _numCCDestRegs(0),
           _numVecDestRegs(0), _numVecElemDestRegs(0), machInst(_machInst),
           mnemonic(_mnemonic), cachedDisassembly(0)
-    { }
+    {}
 
   public:
     virtual ~StaticInst();

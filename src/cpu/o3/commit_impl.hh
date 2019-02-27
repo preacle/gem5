@@ -989,13 +989,21 @@ DefaultCommit<Impl>::commitInsts()
         ThreadID commit_thread = getCommittingThread();
 
         // doReexcute
-        rob->doReexcute(commit_thread);
 
-        if (commit_thread == -1 || !rob->isHeadReady(commit_thread))
-            break;
+        if (commit_thread == -1){
+          break;
+        }
+        rob->doReexcute(commit_thread);
+        if (commit_thread == -1 || !rob->isHeadReady(commit_thread)){
+          //std::cout<<"check isHeadReady"<<std::endl;
+          break;
+        }
 
         head_inst = rob->readHeadInst(commit_thread);
-
+        if (head_inst->isLoad() && !rob->isHeadFinish(commit_thread)){
+          //std::cout<<"check isHeadReady"<<std::endl;
+          break;
+        }
         ThreadID tid = head_inst->threadNumber;
 
         assert(tid == commit_thread);

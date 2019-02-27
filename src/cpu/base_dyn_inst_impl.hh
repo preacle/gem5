@@ -79,6 +79,7 @@ BaseDynInst<Impl>::BaseDynInst(const StaticInstPtr &_staticInst,
     : staticInst(_staticInst), traceData(NULL), macroop(_macroop)
 {
     seqNum = 0;
+    reexecute_memData = nullptr;
     initVars();
 }
 
@@ -143,6 +144,10 @@ BaseDynInst<Impl>::~BaseDynInst()
     if (traceData) {
         delete traceData;
     }
+
+// if (reexecute_memData){
+//    delete reexecute_memData;
+//    }
 
     fault = NoFault;
 

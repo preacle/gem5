@@ -171,7 +171,7 @@ let {{
             predicate += 'OptCondCodesV, '
         else:
             predicate += 'CondCodesV, '
-        predicate += 'condCode)'
+        predicate += 'condCode, xc->testLast)'
         predicate += '/*auto*/'
         return predicate
 
@@ -228,4 +228,3 @@ let {{
             raise Exception, "Illegal combination of post and writeback"
         return base
 }};
-

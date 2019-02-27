@@ -159,6 +159,7 @@ class ROB
     /** Is the oldest instruction across a particular thread ready. */
     bool isHeadReady(ThreadID tid);
 
+    bool isHeadFinish(ThreadID tid);
     /** Is there any commitable head instruction across all threads ready. */
     bool canCommit();
 
