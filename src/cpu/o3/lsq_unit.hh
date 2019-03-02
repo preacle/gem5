@@ -383,7 +383,7 @@ class LSQUnit {
         bool isAllZeros;
     };
 
-  private:
+  public:
     /** The LSQUnit thread id. */
     ThreadID lsqID;
 

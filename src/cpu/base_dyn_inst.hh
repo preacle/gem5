@@ -123,6 +123,7 @@ class BaseDynInst : public ExecContext, public RefCounted
         SerializeHandled,        /// Serialization has been handled
         Reexecuted,
         Reexecuting,
+        SquashDueToReexcute,
         NumStatus
 
     };
@@ -753,11 +754,17 @@ class BaseDynInst : public ExecContext, public RefCounted
     /** Returns whether or not this instruction has Reexecuted. */
     bool isReexecuted() const { return status[Reexecuted]; }
 
-    /** Sets this instruction as executed. */
+    /** Sets this instruction as Reexecuting. */
     void setReexecuting() { status.set(Reexecuting);}
 
-    /** Returns whether or not this instruction has Reexecuted. */
+    /** Returns whether or not this instruction is Reexecuting. */
     bool isReexecuting() const { return status[Reexecuting]; }
+
+    /** Sets this instruction as NEED SQUASH. */
+    void setSquashDueToReexcute() { status.set(SquashDueToReexcute);}
+
+    /** Returns whether or not this instruction NEED SQUASH. */
+    bool isSquashDueToReexcute() const { return status[SquashDueToReexcute]; }
 
     /** Sets this instruction as ready to commit. */
     void setCanCommit() { status.set(CanCommit); }

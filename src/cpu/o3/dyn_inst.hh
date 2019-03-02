@@ -396,12 +396,10 @@ class BaseO3DynInst : public BaseDynInst<Impl>
           memDataBuf.pop_front();
           for (int i=0; i<sizeof(IntReg); i++){
             if (*temp != *(this->reexecute_memData)){
-              std::cout<<"setIntRegOperand : need squash"<<std::endl;
-              this->dump();
-              //this->setSquashed();
-              //TODO : cover the execute
+              this->setSquashDueToReexcute();
               return;
             }
+            temp++;this->reexecute_memData++;
           }
         }
     }
@@ -425,11 +423,10 @@ class BaseO3DynInst : public BaseDynInst<Impl>
           memDataBuf.pop_front();
           for (int i=0; i<sizeof(FloatReg); i++){
             if (*temp != *(this->reexecute_memData)){
-              std::cout<<"setFloatRegOperand : need squash"<<std::endl;
-              //this->setSquashed();
-              //TODO : cover the execute
+              this->setSquashDueToReexcute();
               return;
             }
+            temp++;this->reexecute_memData++;
           }
         }
 
@@ -456,10 +453,10 @@ class BaseO3DynInst : public BaseDynInst<Impl>
           for (int i=0; i<sizeof(FloatRegBits); i++){
             if (*temp != *(this->reexecute_memData)){
               std::cout<<"setFloatRegOperand : need squash"<<std::endl;
-              this->setSquashed();
-              //TODO : cover the execute
+              this->setSquashDueToReexcute();
               return;
             }
+            temp++;this->reexecute_memData++;
           }
         }
 
