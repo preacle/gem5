@@ -378,6 +378,7 @@ ROB<Impl>::doSquash(ThreadID tid)
 
         (*squashIt[tid])->setCanCommit();
 
+        (*squashIt[tid])->setReexecuted();
 
         if (squashIt[tid] == instList[tid].begin()) {
             DPRINTF(ROB, "Reached head of instruction list while "
@@ -535,7 +536,7 @@ ROB<Impl>::doReexcute(ThreadID tid)
        head_it++;
 
        //std::cout<<"doReexcute:"<<cntReexcuteNum<<endl;
-       if (!inst->readyToCommit()){
+       if (!inst->readyToCommit()||inst->isSquashDueToReexcute()){
          return;
        }
        if (inst->isSquashed()||inst->isNonSpeculative()||inst->isMemBarrier()
@@ -550,6 +551,12 @@ ROB<Impl>::doReexcute(ThreadID tid)
          continue;
        }
        if (inst->isLoad() && !inst->isReexecuted()){
+         if (cpu->iew.ldstQueue.thread[tid].stores != 0){
+           int storeHead = cpu->iew.ldstQueue.thread[tid].storeHead;
+           if (cpu->iew.ldstQueue.thread[tid].storeQueue[storeHead].
+             inst->seqNum< inst->seqNum)
+             return ;
+         }
          doReexcuteInst(tid,inst);
          cntReexcuteNum++;
          continue;

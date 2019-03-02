@@ -238,11 +238,12 @@ class DefaultIEW
      */
     void squashDueToBranch(DynInstPtr &inst, ThreadID tid);
 
+  public:
     /** Sends commit proper information for a squash due to a memory order
      * violation.
      */
     void squashDueToMemOrder(DynInstPtr &inst, ThreadID tid);
-
+  private:
     /** Sets Dispatch to blocked, and signals back to other stages to block. */
     void block(ThreadID tid);
 

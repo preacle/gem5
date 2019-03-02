@@ -1359,7 +1359,7 @@ DefaultIEW<Impl>::executeInsts()
                 instQueue.violation(inst, violator);
 
                 // Squash.
-                squashDueToMemOrder(violator, tid);
+                // squashDueToMemOrder(violator, tid);
 
                 ++memOrderViolationEvents;
             }
