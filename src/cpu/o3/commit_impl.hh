@@ -1043,11 +1043,7 @@ DefaultCommit<Impl>::commitInsts()
             bool commit_success = commitHead(head_inst, num_committed);
 
             if (commit_success) {
-              // update retireSSN
-                if(head_inst->isStore()){
-                  StoreSeqNum SSN = head_inst->SSN;
-                  cpu->setRetireSSN(SSN);
-                }
+
                 ++num_committed;
                 statCommittedInstType[tid][head_inst->opClass()]++;
                 ppCommit->notify(head_inst);
@@ -1161,7 +1157,8 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
 
     ThreadID tid = head_inst->threadNumber;
 
-    //std::cout<<"commitHead: SN:"<<head_inst->seqNum<<" ";head_inst->dump();
+    //std::cout<<"commitHead: SN:"<<head_inst->seqNum
+    //<<" SSN:"<<head_inst->SSN<<" ";head_inst->dump();
 
     // If the instruction is not executed yet, then it will need extra
     // handling.  Signal backwards that it should be executed.

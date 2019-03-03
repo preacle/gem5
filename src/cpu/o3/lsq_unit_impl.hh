@@ -1195,6 +1195,9 @@ LSQUnit<Impl>::completeStore(int store_idx)
 
     if (store_idx == storeHead) {
         do {
+            // update retireSSN & svw
+            StoreSeqNum SSN = storeQueue[storeHead].inst->SSN;
+            cpu->setRetireSSN(SSN);
             incrStIdx(storeHead);
 
             --stores;

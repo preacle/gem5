@@ -540,7 +540,7 @@ ROB<Impl>::doReexcute(ThreadID tid)
        }
 
        if (inst->isSquashed()||inst->isNonSpeculative()||inst->isMemBarrier()
-          ||inst->isWriteBarrier()||inst->isStore()){
+          ||inst->isWriteBarrier()){
          inst->setReexecuted();
          return;
        }
@@ -550,16 +550,37 @@ ROB<Impl>::doReexcute(ThreadID tid)
          inst->setReexecuted();
          continue;
        }
-       if (inst->isLoad() && !inst->isReexecuted()){
-         if (cpu->iew.ldstQueue.thread[tid].stores != 0){
-           int storeHead = cpu->iew.ldstQueue.thread[tid].storeHead;
-           if (cpu->iew.ldstQueue.thread[tid].storeQueue[storeHead].
-             inst->seqNum< inst->seqNum)
-             return ;
+
+       if (inst->isStore()){
+         if (inst->isReexecuted()){
+         }else{
+           //std::cout << inst->seqNum << " INSERT SVW: ea"<<inst->effAddr;
+           //inst->dump();
+           cpu->SVWFilter.insert(inst);
+           inst->setReexecuted();
          }
-         doReexcuteInst(tid,inst);
-         cntReexcuteNum++;
-         continue;
+         return;
+       }
+       if (inst->isLoad() && !inst->isReexecuted()){
+         if (!cpu->SVWFilter.violation(inst)){
+          //std::cout << inst->seqNum << " not find in SVW: ea"<<inst->effAddr;
+          //inst->dump();
+           inst->setReexecuted();
+           continue;
+         }
+         else{
+           //std::cout << inst->seqNum << " find in SVW: ea"<<inst->effAddr;
+           //inst->dump();
+           if (cpu->iew.ldstQueue.thread[tid].stores != 0){
+             int storeHead = cpu->iew.ldstQueue.thread[tid].storeHead;
+             if (cpu->iew.ldstQueue.thread[tid].storeQueue[storeHead].
+               inst->seqNum< inst->seqNum)
+               return ;
+           }
+           doReexcuteInst(tid,inst);
+           cntReexcuteNum++;
+           continue;
+         }
        }
        inst->setReexecuted();
 //       inst->setReexecuted();

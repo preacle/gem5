@@ -761,9 +761,6 @@ DefaultFetch<Impl>::doSquash(const TheISA::PCState &newPC,
         if (squashInst->isStore()){
                 cpu->setSSN(SSN - 1);
         }
-        else{
-                cpu->setSSN(SSN);
-        }
     }
     pc[tid] = newPC;
     fetchOffset[tid] = 0;
