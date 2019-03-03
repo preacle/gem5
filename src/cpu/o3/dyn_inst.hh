@@ -378,15 +378,19 @@ class BaseO3DynInst : public BaseDynInst<Impl>
      *  registers.
      */
     void setIntRegOperand(const StaticInst *si, int idx, IntReg val)
-    {   uint8_t* temp = reinterpret_cast<uint8_t*>(&val);
-        if(!this->isLoad()){
-          this->cpu->setIntReg(this->_destRegIdx[idx], val);
-          BaseDynInst<Impl>::setIntRegOperand(si, idx, val);
+    {
+      //  if (this->isReexecuting()){
+      //    std::cout<<"setIntRegOperand: re-val:"<<val<<" ";this->dump();
+      //  }else{
+      //    std::cout<<"setIntRegOperand: val:"<<val<<" ";this->dump();
+      //  }
+        this->cpu->setIntReg(this->_destRegIdx[idx], val);
+        BaseDynInst<Impl>::setIntRegOperand(si, idx, val);
+        uint8_t* temp = reinterpret_cast<uint8_t*>(&val);
+        if (!this->isLoad()){
           return ;
         }
         if(!this->isReexecuting()){
-            this->cpu->setIntReg(this->_destRegIdx[idx], val);
-            BaseDynInst<Impl>::setIntRegOperand(si, idx, val);
             this->reexecute_memData = new uint8_t[sizeof(IntReg)];
             memcpy(this->reexecute_memData, temp, sizeof(IntReg));
             memDataBuf.push_back(this->reexecute_memData);
@@ -396,7 +400,7 @@ class BaseO3DynInst : public BaseDynInst<Impl>
           memDataBuf.pop_front();
           for (int i=0; i<sizeof(IntReg); i++){
             if (*temp != *(this->reexecute_memData)){
-              this->setSquashDueToReexcute();
+              this->setSquashDueToReexecute();
               return;
             }
             temp++;this->reexecute_memData++;
@@ -406,15 +410,13 @@ class BaseO3DynInst : public BaseDynInst<Impl>
 
     void setFloatRegOperand(const StaticInst *si, int idx, FloatReg val)
     {
+        this->cpu->setFloatReg(this->_destRegIdx[idx], val);
+        BaseDynInst<Impl>::setFloatRegOperand(si, idx, val);
         uint8_t* temp = reinterpret_cast<uint8_t*>(&val);
         if(!this->isLoad()){
-            this->cpu->setFloatReg(this->_destRegIdx[idx], val);
-            BaseDynInst<Impl>::setFloatRegOperand(si, idx, val);
             return ;
         }
         if(!this->isReexecuting()){
-            this->cpu->setFloatReg(this->_destRegIdx[idx], val);
-            BaseDynInst<Impl>::setFloatRegOperand(si, idx, val);
             this->reexecute_memData = new uint8_t[sizeof(FloatReg)];
             memcpy(this->reexecute_memData, temp, sizeof(FloatReg));
             memDataBuf.push_back(this->reexecute_memData);
@@ -423,7 +425,7 @@ class BaseO3DynInst : public BaseDynInst<Impl>
           memDataBuf.pop_front();
           for (int i=0; i<sizeof(FloatReg); i++){
             if (*temp != *(this->reexecute_memData)){
-              this->setSquashDueToReexcute();
+              this->setSquashDueToReexecute();
               return;
             }
             temp++;this->reexecute_memData++;
@@ -435,26 +437,23 @@ class BaseO3DynInst : public BaseDynInst<Impl>
     void setFloatRegOperandBits(const StaticInst *si, int idx,
                                 FloatRegBits val)
     {
+      this->cpu->setFloatRegBits(this->_destRegIdx[idx], val);
+      BaseDynInst<Impl>::setFloatRegOperandBits(si, idx, val);
       uint8_t* temp = reinterpret_cast<uint8_t*>(&val);
       if(!this->isLoad()){
-        this->cpu->setFloatRegBits(this->_destRegIdx[idx], val);
-        BaseDynInst<Impl>::setFloatRegOperandBits(si, idx, val);
         return ;
       }
       if(!this->isReexecuting()){
-        this->cpu->setFloatRegBits(this->_destRegIdx[idx], val);
-        BaseDynInst<Impl>::setFloatRegOperandBits(si, idx, val);
             this->reexecute_memData = new uint8_t[sizeof(FloatRegBits)];
             memcpy(this->reexecute_memData, temp, sizeof(FloatRegBits));
             memDataBuf.push_back(this->reexecute_memData);
         }else{
-          this->reexecute_memData = memDataBuf.front();
-          memDataBuf.pop_front();
-          for (int i=0; i<sizeof(FloatRegBits); i++){
-            if (*temp != *(this->reexecute_memData)){
-              std::cout<<"setFloatRegOperand : need squash"<<std::endl;
-              this->setSquashDueToReexcute();
-              return;
+            this->reexecute_memData = memDataBuf.front();
+            memDataBuf.pop_front();
+            for (int i=0; i<sizeof(FloatRegBits); i++){
+              if (*temp != *(this->reexecute_memData)){
+                this->setSquashDueToReexecute();
+                return;
             }
             temp++;this->reexecute_memData++;
           }

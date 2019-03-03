@@ -1161,7 +1161,7 @@ LSQUnit<Impl>::writeback(DynInstPtr &inst, PacketPtr pkt)
         //printf("reex finshed-----------\n");
         //inst->dump();
         inst->completeAcc(pkt);
-        if (inst->isSquashDueToReexcute()){
+        if (inst->isSquashDueToReexecute()){
           iewStage->squashDueToMemOrder(inst,inst->threadNumber);
           return;
         }

@@ -978,6 +978,7 @@ DefaultCommit<Impl>::commitInsts()
 
     DynInstPtr head_inst;
 
+    int squash_flag = 0;
     // Commit as many instructions as possible until the commit bandwidth
     // limit is reached, or it becomes impossible to commit any more.
     while (num_committed < commitWidth) {
@@ -990,19 +991,21 @@ DefaultCommit<Impl>::commitInsts()
 
         // doReexcute
 
-        if (commit_thread == -1){
+        if (commit_thread == -1 ||  squash_flag == 1){
           break;
         }
         rob->doReexcute(commit_thread);
         if (commit_thread == -1 || !rob->isHeadReady(commit_thread)){
-          //std::cout<<"check isHeadReady"<<std::endl;
           break;
         }
 
         head_inst = rob->readHeadInst(commit_thread);
         if (head_inst->isLoad() && !rob->isHeadFinish(commit_thread)){
-          //std::cout<<"check isHeadReady"<<std::endl;
           break;
+        }
+        if (head_inst -> isSquashDueToReexecute()){
+          squash_flag = 1;
+          head_inst->clearSquashDueToReexecute();
         }
         ThreadID tid = head_inst->threadNumber;
 
@@ -1157,6 +1160,8 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
     assert(head_inst);
 
     ThreadID tid = head_inst->threadNumber;
+
+    //std::cout<<"commitHead: SN:"<<head_inst->seqNum<<" ";head_inst->dump();
 
     // If the instruction is not executed yet, then it will need extra
     // handling.  Signal backwards that it should be executed.

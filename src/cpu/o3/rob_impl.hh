@@ -535,16 +535,16 @@ ROB<Impl>::doReexcute(ThreadID tid)
        DynInstPtr inst = *head_it;
        head_it++;
 
-       //std::cout<<"doReexcute:"<<cntReexcuteNum<<endl;
-       if (!inst->readyToCommit()||inst->isSquashDueToReexcute()){
+       if (!inst->readyToCommit() || inst->isSquashDueToReexecute()){
          return;
        }
+
        if (inst->isSquashed()||inst->isNonSpeculative()||inst->isMemBarrier()
           ||inst->isWriteBarrier()||inst->isStore()){
          inst->setReexecuted();
          return;
        }
-       //if (!inst->readPredicate()||inst->isControl()||
+      // if (!inst->readPredicate()||inst->isControl()||
        //inst->isMacroop()||inst->isMicroop()||inst->isAtomic()){
        if (!inst->readPredicate()){
          inst->setReexecuted();

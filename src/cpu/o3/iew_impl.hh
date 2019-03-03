@@ -518,11 +518,17 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
         toCommit->squash[tid] = true;
 
         toCommit->squashedSeqNum[tid] = inst->seqNum;
-        toCommit->pc[tid] = inst->pcState();
+        TheISA::PCState pc = inst->pcState();
+        if (inst->isSquashDueToReexecute()){
+          TheISA::advancePC(pc, inst->staticInst);
+          inst->setReexecuted();
+        }
+        toCommit->pc[tid] = pc;
         toCommit->mispredictInst[tid] = NULL;
 
-        // Must include the memory violator in the squash.
-        toCommit->includeSquashInst[tid] = true;
+        if (!inst->isSquashDueToReexecute())
+          // Must include the memory violator in the squash.
+          toCommit->includeSquashInst[tid] = true;
 
         wroteToTimeBuffer = true;
     }
@@ -1359,7 +1365,7 @@ DefaultIEW<Impl>::executeInsts()
                 instQueue.violation(inst, violator);
 
                 // Squash.
-                // squashDueToMemOrder(violator, tid);
+                 //squashDueToMemOrder(violator, tid);
 
                 ++memOrderViolationEvents;
             }
