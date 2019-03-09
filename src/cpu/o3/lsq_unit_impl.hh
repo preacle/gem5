@@ -638,7 +638,6 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
     assert(!inst->isSquashed());
 
     // set SSN
-    inst->SSN  = cpu->getRetireSSN();
     load_fault = inst->initiateAcc();
 
     if (inst->isTranslationDelayed() &&
@@ -668,10 +667,23 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
         int load_idx = inst->lqIdx;
         incrLdIdx(load_idx);
 
-        if (checkLoads)
-            return checkViolations(load_idx, inst);
+        if (inst->isNeedBypass()){
+            if (inst->isInteger()){
+              IntReg value = inst->getIntRegMem();
+              inst->setIntRegOperand(inst->staticInst.get(), 0, value);
+            }else{
+              FloatReg value = inst->getFloatRegMem();
+              inst->setFloatRegOperand(inst->staticInst.get(), 0, value);
+            }
+            iewStage->instToCommit(inst);
+            iewStage->activityThisCycle();
+            inst->setExecuted();
+        }else{
+          inst->SSN  = cpu->getRetireSSN();
+        }
+        //if (checkLoads)
+        //    return checkViolations(load_idx, inst);
     }
-
     return load_fault;
 }
 
@@ -692,7 +704,7 @@ LSQUnit<Impl>::executeStore(DynInstPtr &store_inst)
 
     // Check the recently completed loads to see if any match this store's
     // address.  If so, then we have a memory ordering violation.
-    int load_idx = store_inst->lqIdx;
+    //int load_idx = store_inst->lqIdx;
 
     Fault store_fault = store_inst->initiateAcc();
 
@@ -723,8 +735,8 @@ LSQUnit<Impl>::executeStore(DynInstPtr &store_inst)
 
         ++storesToWB;
     }
-
-    return checkViolations(load_idx, store_inst);
+    return store_fault;
+    //return checkViolations(load_idx, store_inst);
 
 }
 
@@ -1138,6 +1150,9 @@ LSQUnit<Impl>::writeback(DynInstPtr &inst, PacketPtr pkt)
         ++lsqIgnoredResponses;
         return;
     }
+
+    if (inst->isNeedBypass() && !inst->isReexecuting())
+        return;
 
     if (!inst->isExecuted()) {
         inst->setExecuted();

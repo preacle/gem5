@@ -175,6 +175,9 @@ class DefaultRename
     /** Sets pointer to rename maps (per-thread structures). */
     void setRenameMap(RenameMap rm_ptr[Impl::MaxThreads]);
 
+    /*rename merge*/
+    void mergeInsts(DynInstPtr& desc, DynInstPtr& src,ThreadID tid);
+
     /** Sets pointer to the free list. */
     void setFreeList(FreeList *fl_ptr);
 
@@ -352,6 +355,9 @@ class DefaultRename
     /** Queue of all instructions coming from decode this cycle. */
     InstQueue insts[Impl::MaxThreads];
 
+    /** Queue of store instructions coming from decode this cycle. */
+    InstQueue SRQ;
+
     /** Skid buffer between rename and decode. */
     InstQueue skidBuffer[Impl::MaxThreads];
 
@@ -360,6 +366,8 @@ class DefaultRename
 
     /** Free list interface. */
     FreeList *freeList;
+
+    std::map<PhysRegIdPtr,uint64_t> countList;
 
     /** Pointer to the list of active threads. */
     std::list<ThreadID> *activeThreads;

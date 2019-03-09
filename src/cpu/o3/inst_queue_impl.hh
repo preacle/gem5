@@ -1194,7 +1194,7 @@ InstructionQueue<Impl>::violation(DynInstPtr &store,
                                   DynInstPtr &faulting_load)
 {
     intInstQueueWrites++;
-    memDepUnit[store->threadNumber].violation(store, faulting_load);
+    //memDepUnit[store->threadNumber].violation(store, faulting_load);
 }
 
 template <class Impl>
@@ -1393,6 +1393,7 @@ InstructionQueue<Impl>::addToProducers(DynInstPtr &new_inst)
     // the producer of a register's value, but for convenience a ptr
     // to the producing instruction will be placed in the head node of
     // the dependency links.
+    if (new_inst->isNeedBypass()) return;
     int8_t total_dest_regs = new_inst->numDestRegs();
 
     for (int dest_reg_idx = 0;

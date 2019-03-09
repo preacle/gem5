@@ -121,6 +121,7 @@ class BaseDynInst : public ExecContext, public RefCounted
                                  /// instructions ahead of it
         SerializeAfter,          /// Needs to serialize instructions behind it
         SerializeHandled,        /// Serialization has been handled
+        NeedBypass,
         Reexecuted,
         Reexecuting,
         SquashDueToReexecute,
@@ -146,13 +147,18 @@ class BaseDynInst : public ExecContext, public RefCounted
     };
 
   public:
+    uint64_t needpdt = 0;
     /** The sequence number of the instruction. */
-    InstSeqNum seqNum;
+    InstSeqNum seqNum = 0;
 
     /** The store sequence number of the instruction. */
-    StoreSeqNum SSN;
+    StoreSeqNum SSN = 0;
 
+    StoreSeqNum gSSN = 0;
 
+    StoreSeqNum bypassSSN = 0;
+
+    StoreSeqNum diffSSN = 0;   // gloabSSN - SSNbypassSSN;
     /** The StaticInst used by this BaseDynInst. */
     const StaticInstPtr staticInst;
 
@@ -169,6 +175,8 @@ class BaseDynInst : public ExecContext, public RefCounted
 
     /** InstRecord that tracks this instructions. */
     Trace::InstRecord *traceData;
+
+    std::vector<RegId> addSrcReg;
 
   protected:
     /** The result of the instruction; assumes an instruction can have many
@@ -591,8 +599,13 @@ class BaseDynInst : public ExecContext, public RefCounted
     TheISA::PCState branchTarget() const
     { return staticInst->branchTarget(pc); }
 
+    void addRegToSrc(RegId x){
+      addSrcReg.push_back(x);
+    }
     /** Returns the number of source registers. */
-    int8_t numSrcRegs() const { return staticInst->numSrcRegs(); }
+    int8_t numSrcRegs() const {
+      return staticInst->numSrcRegs() + int8_t(addSrcReg.size());
+    }
 
     /** Returns the number of destination registers. */
     int8_t numDestRegs() const { return staticInst->numDestRegs(); }
@@ -611,7 +624,13 @@ class BaseDynInst : public ExecContext, public RefCounted
     const RegId& destRegIdx(int i) const { return staticInst->destRegIdx(i); }
 
     /** Returns the logical register index of the i'th source register. */
-    const RegId& srcRegIdx(int i) const { return staticInst->srcRegIdx(i); }
+    const RegId& srcRegIdx(int i) const {
+      if (i < staticInst->numSrcRegs())
+        return staticInst->srcRegIdx(i);
+      else{
+        return addSrcReg[i - staticInst->numSrcRegs()];
+      }
+    }
 
     /** Return the size of the instResult queue. */
     uint8_t resultSize() { return instResult.size(); }
@@ -762,6 +781,14 @@ class BaseDynInst : public ExecContext, public RefCounted
 
     /** Returns whether or not this instruction is Reexecuting. */
     bool isReexecuting() const { return status[Reexecuting]; }
+
+    /** Sets this instruction as NeedBypass. */
+    void setNeedBypass() { status.set(NeedBypass);}
+
+    void clearNeedBypass() { status.reset(NeedBypass);}
+
+    /** Returns whether or not this instruction is NeedBypass. */
+    bool isNeedBypass() const { return status[NeedBypass]; }
 
     /** Sets this instruction as NEED SQUASH. */
     void setSquashDueToReexecute() { status.set(SquashDueToReexecute);}

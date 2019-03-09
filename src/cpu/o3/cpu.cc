@@ -140,6 +140,7 @@ template <class Impl>
 FullO3CPU<Impl>::FullO3CPU(DerivO3CPUParams *params)
     : BaseO3CPU(params),
       SVWFilter(1024,4),
+      loadPdt(),
       itb(params->itb),
       dtb(params->dtb),
       tickEvent([this]{ tick(); }, "FullO3CPU tick",

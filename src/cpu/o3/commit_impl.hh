@@ -1006,6 +1006,11 @@ DefaultCommit<Impl>::commitInsts()
         if (head_inst -> isSquashDueToReexecute()){
           squash_flag = 1;
           head_inst->clearSquashDueToReexecute();
+          if (head_inst->isLoad() && head_inst->bypassSSN != 0
+                && head_inst->numDestRegs() < 2){
+                  uint64_t diffSSN = cpu->retireSSN - head_inst->bypassSSN;
+                  cpu->loadPdt.insert(head_inst->pcState().pc(),diffSSN);
+          }
         }
         ThreadID tid = head_inst->threadNumber;
 
@@ -1043,7 +1048,6 @@ DefaultCommit<Impl>::commitInsts()
             bool commit_success = commitHead(head_inst, num_committed);
 
             if (commit_success) {
-
                 ++num_committed;
                 statCommittedInstType[tid][head_inst->opClass()]++;
                 ppCommit->notify(head_inst);
@@ -1157,8 +1161,8 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
 
     ThreadID tid = head_inst->threadNumber;
 
-    //std::cout<<"commitHead: SN:"<<head_inst->seqNum
-    //<<" SSN:"<<head_inst->SSN<<" ";head_inst->dump();
+  //  std::cout<<"commitHead: SN:"<<head_inst->seqNum
+  //  <<" SSN:"<<head_inst->SSN<<" ";head_inst->dump();
 
     // If the instruction is not executed yet, then it will need extra
     // handling.  Signal backwards that it should be executed.

@@ -52,19 +52,20 @@ public:
       }
     }
 
-    SVWStoreSeqNum_t search(SVWKey_t key,SVWTag_t tag){
+    pair<SVWStoreSeqNum_t,bool> search(SVWKey_t key,SVWTag_t tag){
         SVWStoreSeqNum_t ret = 0;
         for (auto i:svwItems[key]){
             if (i.VAILD && i.TAG == tag){
-                return i.SSN;
+                return pair<SVWStoreSeqNum_t,bool>(i.SSN,true);
             }else{
                 ret = i.SSN;
             }
         }
-        return ret;
+        return pair<SVWStoreSeqNum_t,bool>(ret,false);
     }
 
     bool violation(DynInstPtr &inst){
+      inst->bypassSSN = 0;
       if (inst->effAddr == 0)
         return false;
       auto inst_eff_addr1 = inst->effAddr >> depCheckShift;
@@ -73,7 +74,10 @@ public:
       for (auto addr = inst_eff_addr1; addr <= inst_eff_addr2; addr++){
         SVWKey_t key = addr % size;
         SVWTag_t tag = addr / size;
-        SVWStoreSeqNum_t ssn = search(key, tag);
+        auto ret = search(key, tag);
+        SVWStoreSeqNum_t ssn = ret.first;
+        if (ret.second)
+          inst->bypassSSN = ssn;
         if (ssn > inst->SSN){
           return true;
         }

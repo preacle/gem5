@@ -46,6 +46,7 @@
 #define __CPU_O3_RENAME_MAP_HH__
 
 #include <iostream>
+#include <map>
 #include <utility>
 #include <vector>
 
@@ -73,7 +74,6 @@ class SimpleRenameMap
     using iterator = Arch2PhysMap::iterator;
     using const_iterator = Arch2PhysMap::const_iterator;
   private:
-
     /**
      * Pointer to the free list from which new physical registers
      * should be allocated in rename()

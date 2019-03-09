@@ -533,6 +533,7 @@ ROB<Impl>::doReexcute(ThreadID tid)
       return;
     while (head_it != instList[tid].end()) {
        DynInstPtr inst = *head_it;
+       //std::cout<<"reex:"<<inst->seqNum<<" ";inst->dump();
        head_it++;
 
        if (!inst->readyToCommit() || inst->isSquashDueToReexecute()){
@@ -562,7 +563,7 @@ ROB<Impl>::doReexcute(ThreadID tid)
          return;
        }
        if (inst->isLoad() && !inst->isReexecuted()){
-         if (!cpu->SVWFilter.violation(inst)){
+         if (!cpu->SVWFilter.violation(inst) && !inst->isNeedBypass()){
           //std::cout << inst->seqNum << " not find in SVW: ea"<<inst->effAddr;
           //inst->dump();
            inst->setReexecuted();
