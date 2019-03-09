@@ -765,6 +765,9 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
             serializeAfter(insts_to_rename, tid);
         }
 
+        if (inst->needpdt >= 1 &&inst-> diffSSN < SRQ.size()){
+            inst->maybeBypassSSN = SRQ[inst->diffSSN]->SSN;
+        }
         if (inst->isNeedBypass()&& inst-> diffSSN < SRQ.size()){
             auto bypassLoad = SRQ[inst->diffSSN];
             renameSrcRegs(inst, inst->threadNumber);

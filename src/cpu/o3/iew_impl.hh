@@ -1245,6 +1245,17 @@ DefaultIEW<Impl>::executeInsts()
             if (inst->isLoad()) {
                 // Loads will mark themselves as executed, and their writeback
                 // event adds the instruction to the queue to commit
+                auto tid = inst->threadNumber;
+                if (!inst->isNeedBypass()&&inst->maybeBypassSSN != 0){
+                  if (ldstQueue.thread[tid].stores != 0){
+                    int storeHead = ldstQueue.thread[tid].storeHead;
+                    if (ldstQueue.thread[tid].storeQueue[storeHead].
+                      inst->seqNum<= inst->maybeBypassSSN){
+                            instQueue.deferMemInst(inst);
+                            continue;
+                      }
+                    }
+                }
                 fault = ldstQueue.executeLoad(inst);
 
                 if (inst->isTranslationDelayed() &&

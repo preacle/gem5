@@ -25,18 +25,18 @@ public:
                     }
                     else{
                         value = insertVal;
-                        c = 0;
+                        c = 1;
                     }
                 }else{
                     tag = insertTag;
                     value = insertVal;
-                    c = 0;
+                    c = 1;
                 }
             }else{
                 v = 1;
                 tag = insertTag;
                 value = insertVal;
-                c = 0;
+                c = 1;
             }
             return true;
         }

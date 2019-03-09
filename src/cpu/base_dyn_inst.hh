@@ -151,6 +151,7 @@ class BaseDynInst : public ExecContext, public RefCounted
     /** The sequence number of the instruction. */
     InstSeqNum seqNum = 0;
 
+    StoreSeqNum maybeBypassSSN = 0;
     /** The store sequence number of the instruction. */
     StoreSeqNum SSN = 0;
 
