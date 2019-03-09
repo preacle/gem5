@@ -82,6 +82,7 @@ class BaseO3DynInst : public BaseDynInst<Impl>
         MaxInstDestRegs = TheISA::MaxInstDestRegs       //< Max dest regs
     };
   std::list<uint8_t*> memDataBuf;
+
   public:
     /** BaseDynInst constructor given a binary instruction. */
     BaseO3DynInst(const StaticInstPtr &staticInst, const StaticInstPtr
@@ -93,6 +94,7 @@ class BaseO3DynInst : public BaseDynInst<Impl>
                   const StaticInstPtr &_macroop);
 
     ~BaseO3DynInst();
+
 
     /** Executes the instruction.*/
     Fault execute();

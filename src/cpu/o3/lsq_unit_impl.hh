@@ -668,16 +668,24 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
         incrLdIdx(load_idx);
 
         if (inst->isNeedBypass()){
-            if (inst->isInteger()){
-              IntReg value = inst->getIntRegMem();
-              inst->setIntRegOperand(inst->staticInst.get(), 0, value);
-            }else{
-              FloatReg value = inst->getFloatRegMem();
-              inst->setFloatRegOperand(inst->staticInst.get(), 0, value);
+            auto binst = inst->BypassInst;
+            binst->clearNeedBypass();
+            if (binst->effAddr == inst->effAddr){
+              if (inst->isInteger()){
+                IntReg value = inst->getIntRegMem();
+                inst->setIntRegOperand(inst->staticInst.get(), 0, value);
+              }else{
+                FloatReg value = inst->getFloatRegMem();
+                inst->setFloatRegOperand(inst->staticInst.get(), 0, value);
+              }
+              iewStage->instToCommit(inst);
+              iewStage->activityThisCycle();
+              inst->setExecuted();
             }
-            iewStage->instToCommit(inst);
-            iewStage->activityThisCycle();
-            inst->setExecuted();
+            else{
+              inst->clearNeedBypass();
+              inst->SSN  = cpu->getRetireSSN();
+            }
         }else{
           inst->SSN  = cpu->getRetireSSN();
         }

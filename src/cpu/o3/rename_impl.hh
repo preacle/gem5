@@ -263,7 +263,6 @@ DefaultRename<Impl>::resetStage()
         instsInProgress[tid] = 0;
         loadsInProgress[tid] = 0;
         storesInProgress[tid] = 0;
-
         serializeOnNextInst[tid] = false;
     }
 }
@@ -294,21 +293,18 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
 //  src->dump();
   dest->SSN = src->SSN;
   RenameMap *map = renameMap[tid];
-
+  dest->BypassInst = src;
   ThreadContext *tcSrc = src->tcBase();
   const RegId&  src_reg = src->srcRegIdx(src->numSrcRegs() - 1);
   auto renamed_reg = map->lookup(tcSrc->flattenRegId(src_reg));
 
   ThreadContext *tcDest = dest->tcBase();
   const RegId&  dest_reg = dest->destRegIdx(0);
-  auto prev_reg = map->lookup(tcDest->flattenRegId(dest_reg));
+  RegId flat_dest_regid = tcDest->flattenRegId(dest_reg);
+  auto rename_result = map->rename(flat_dest_regid);
 
 //  std::cout<<dest_reg<<std::endl;
 //  std::cout<<src_reg<<std::endl;
-
-  auto rename_result =
-    std::pair<PhysRegIdPtr, PhysRegIdPtr>(renamed_reg, prev_reg);
-
 
   DPRINTF(Rename, "[tid:%u]: Renaming arch reg %i (%s) to physical "
           "reg %i (%i).\n", tid, dest_reg.index(),
@@ -317,7 +313,7 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
           rename_result.first->flatIndex());
 
   // Record the rename information so that a history can be kept.
-  RenameHistory hb_entry(dest->seqNum, dest_reg,
+  RenameHistory hb_entry(dest->seqNum, flat_dest_regid,
                          rename_result.first,
                          rename_result.second);
 
@@ -339,10 +335,10 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
                       rename_result.first,
                       rename_result.second);
   dest->flattenDestReg(0, tcSrc->flattenRegId(src_reg));
-  countList[rename_result.first]++;
   dest->clearCanIssue();
   if (scoreboard->getReg(renamed_reg))
       dest->markSrcRegReady(dest->numSrcRegs()-1);
+  src->setNeedBypass();
 }
 
 template <class Impl>
@@ -768,7 +764,8 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
         if (inst->needpdt >= 1 &&inst-> diffSSN < SRQ.size()){
             inst->maybeBypassSSN = SRQ[inst->diffSSN]->SSN;
         }
-        if (inst->isNeedBypass()&& inst-> diffSSN < SRQ.size()){
+        if (inst->isNeedBypass()&& inst-> diffSSN < SRQ.size()
+          && !SRQ[inst->diffSSN]->isNeedBypass()){
             auto bypassLoad = SRQ[inst->diffSSN];
             renameSrcRegs(inst, inst->threadNumber);
             mergeInsts(inst, bypassLoad, tid);
@@ -1018,11 +1015,8 @@ DefaultRename<Impl>::doSquash(const InstSeqNum &squashed_seq_num, ThreadID tid)
             // Tell the rename map to set the architected register to the
             // previous physical register that it was renamed to.
             renameMap[tid]->setEntry(hb_it->archReg, hb_it->prevPhysReg);
-            countList[hb_it->newPhysReg]--;
-            if (countList[hb_it->newPhysReg] == 0){
               // Put the renamed physical register back on the free list.
                 freeList->addReg(hb_it->newPhysReg);
-            }
 
         }
 
@@ -1064,9 +1058,15 @@ DefaultRename<Impl>::removeFromHistory(InstSeqNum inst_seq_num, ThreadID tid)
     // number. Some or even all of the committed instructions may not have
     // rename histories if they did not have destination registers that were
     // renamed.
+    InstSeqNum freeSeqNum = inst_seq_num;
+    while (SRQ.size() != 0&&SRQ.back()->seqNum <= inst_seq_num&&
+      !SRQ.back()->isNeedBypass()){
+        freeSeqNum = SRQ.back()->seqNum;
+        SRQ.pop_back();
+    }
     while (!historyBuffer[tid].empty() &&
            hb_it != historyBuffer[tid].end() &&
-           hb_it->instSeqNum <= inst_seq_num) {
+           hb_it->instSeqNum <= freeSeqNum) {
 
         DPRINTF(Rename, "[tid:%u]: Freeing up older rename of reg %i (%s), "
                 "[sn:%lli].\n",
@@ -1078,18 +1078,12 @@ DefaultRename<Impl>::removeFromHistory(InstSeqNum inst_seq_num, ThreadID tid)
         // can be recognized because the new mapping is the same as
         // the old one.
         if (hb_it->newPhysReg != hb_it->prevPhysReg) {
-            countList[hb_it->prevPhysReg]--;
-            if (countList[hb_it->prevPhysReg] == 0){
-              freeList->addReg(hb_it->prevPhysReg);
-            }
+            freeList->addReg(hb_it->prevPhysReg);
         }
 
         ++renameCommittedMaps;
 
         historyBuffer[tid].erase(hb_it--);
-    }
-    while (SRQ.size() != 0&&SRQ.back()->seqNum <= inst_seq_num){
-      SRQ.pop_back();
     }
 }
 
@@ -1201,7 +1195,6 @@ DefaultRename<Impl>::renameDestRegs(DynInstPtr &inst, ThreadID tid)
         inst->renameDestReg(dest_idx,
                             rename_result.first,
                             rename_result.second);
-        countList[rename_result.first] = 1;
 
         ++renameRenamedOperands;
     }

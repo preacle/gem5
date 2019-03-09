@@ -519,14 +519,14 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
 
         toCommit->squashedSeqNum[tid] = inst->seqNum;
         TheISA::PCState pc = inst->pcState();
-        if (inst->isSquashDueToReexecute()&&!inst->isNeedBypass()){
+        if (inst->isSquashDueToReexecute()){
           TheISA::advancePC(pc, inst->staticInst);
           inst->setReexecuted();
         }
         toCommit->pc[tid] = pc;
         toCommit->mispredictInst[tid] = NULL;
 
-        if (!inst->isSquashDueToReexecute()||inst->isNeedBypass())
+        if (!inst->isSquashDueToReexecute())
           // Must include the memory violator in the squash.
           toCommit->includeSquashInst[tid] = true;
 
@@ -1255,6 +1255,10 @@ DefaultIEW<Impl>::executeInsts()
                             continue;
                       }
                     }
+                  if (inst->isNeedBypass()&&!inst->BypassInst->effAddrValid()){
+                              instQueue.deferMemInst(inst);
+                              continue;
+                  }
                 }
                 fault = ldstQueue.executeLoad(inst);
 
@@ -1446,7 +1450,7 @@ DefaultIEW<Impl>::writebackInsts()
         // are first sent to commit.  Instead commit must tell the LSQ
         // when it's ready to execute the strictly ordered load.
         if (!inst->isSquashed() && inst->isExecuted()
-            && inst->getFault() == NoFault && !inst->isNeedBypass()) {
+            && inst->getFault() == NoFault) {
             int dependents = instQueue.wakeDependents(inst);
 
             for (int i = 0; i < inst->numDestRegs(); i++) {

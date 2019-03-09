@@ -163,6 +163,8 @@ class BaseDynInst : public ExecContext, public RefCounted
     /** The StaticInst used by this BaseDynInst. */
     const StaticInstPtr staticInst;
 
+    DynInstPtr BypassInst = nullptr;
+
     /** Pointer to the Impl's CPU object. */
     ImplCPU *cpu;
 
