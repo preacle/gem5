@@ -65,6 +65,7 @@
 #include "cpu/o3/ssnpdt.hh"
 #include "cpu/o3/svw.hh"
 #include "cpu/o3/thread_state.hh"
+#include "cpu/o3/vpt.hh"
 #include "cpu/simple_thread.hh"
 #include "cpu/timebuf.hh"
 
@@ -121,6 +122,7 @@ class FullO3CPU : public BaseO3CPU
 
     SVW<Impl> SVWFilter;
     SSNPDT loadPdt;
+    LVP lvp;
 
   public:
     enum Status {

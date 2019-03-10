@@ -1,0 +1,8 @@
+gem5 Simulator System.  http://gem5.org
+gem5 is copyrighted software; use the --copyright option for details.
+
+gem5 compiled Mar 10 2019 14:06:31
+gem5 started Mar 10 2019 14:07:06
+gem5 executing on ligangyi-GE62-6QC, pid 30230
+command line: ./build/ARM/gem5.opt ./configs/example/se.py --cpu-type=DerivO3CPU --caches -c ./tests/test-progs/dhrystone -v set
+

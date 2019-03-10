@@ -294,17 +294,24 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
   dest->SSN = src->SSN;
   RenameMap *map = renameMap[tid];
   dest->BypassInst = src;
-  ThreadContext *tcSrc = src->tcBase();
-  const RegId&  src_reg = src->srcRegIdx(src->numSrcRegs() - 1);
+
+  /*ARM ONLY*/
+  ThreadContext *tcSrc = dest->tcBase();
+  const RegId&  src_reg = src->srcRegIdx(5);
   auto renamed_reg = map->lookup(tcSrc->flattenRegId(src_reg));
+
 
   ThreadContext *tcDest = dest->tcBase();
   const RegId&  dest_reg = dest->destRegIdx(0);
   RegId flat_dest_regid = tcDest->flattenRegId(dest_reg);
+
+  // Rename Dest Register
   auto rename_result = map->rename(flat_dest_regid);
 
+  dest->flattenDestReg(0, tcSrc->flattenRegId(dest_reg));
 //  std::cout<<dest_reg<<std::endl;
 //  std::cout<<src_reg<<std::endl;
+  scoreboard->unsetReg(rename_result.first);
 
   DPRINTF(Rename, "[tid:%u]: Renaming arch reg %i (%s) to physical "
           "reg %i (%i).\n", tid, dest_reg.index(),
@@ -324,28 +331,32 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
           historyBuffer[tid].size(),
           (*historyBuffer[tid].begin()).instSeqNum);
 
+
+
   // Tell the instruction to rename the appropriate destination
   // register (dest_idx) to the new physical register
   // (rename_result.first), and record the previous physical
   // register that the same logical register was renamed to
   // (rename_result.second).
-  dest->addRegToSrc(src_reg);
-  dest->renameSrcReg(dest->numSrcRegs()-1, renamed_reg);
   dest->renameDestReg(0,
                       rename_result.first,
                       rename_result.second);
-  dest->flattenDestReg(0, tcSrc->flattenRegId(src_reg));
+  ++renameRenamedOperands;
+  dest->addRegToSrc(src_reg);
+  dest->renameSrcReg(dest->numSrcRegs()-1, renamed_reg);
   dest->clearCanIssue();
-  if (scoreboard->getReg(renamed_reg) && dest->needpdt >= 3){
-    dest->setExecuted();
-    dest->setBypassed();
+  if (scoreboard->getReg(renamed_reg)){
     dest->markSrcRegReady(dest->numSrcRegs()-1);
-    if (dest->isInteger()){
-      IntReg value = dest->getIntRegMem();
-      dest->setIntRegOperand(dest->staticInst.get(), 0, value);
-    }else{
-      FloatReg value = dest->getFloatRegMem();
-      dest->setFloatRegOperand(dest->staticInst.get(), 0, value);
+    if (dest->needpdt >= 3){
+      dest->setExecuted();
+      dest->setBypassed();
+      if (dest->isInteger()){
+        IntReg value = dest->getIntRegMem();
+        dest->setIntRegOperand(dest->staticInst.get(), 0, value);
+      }else{
+        FloatReg value = dest->getFloatRegMem();
+        dest->setFloatRegOperand(dest->staticInst.get(), 0, value);
+      }
     }
   }
 
@@ -772,14 +783,21 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
             serializeAfter(insts_to_rename, tid);
         }
 
-        if (inst->needpdt >= 1 &&inst-> diffSSN < SRQ.size()){
-            inst->maybeBypassSSN = SRQ[inst->diffSSN]->SSN;
+        if (inst->needlvp >= 63){
+          renameSrcRegs(inst, inst->threadNumber);
+          renameDestRegs(inst, inst->threadNumber);
+          inst->setNeedBypass();
+          //std::cout<<"LVP :";inst->dump();
         }
-        if (inst->isNeedBypass()&& inst-> diffSSN < SRQ.size()
-          && !SRQ[inst->diffSSN]->isNeedBypass()){
+        else
+        if (inst->needpdt >= 1&& inst-> diffSSN < SRQ.size()
+          && !SRQ[inst->diffSSN]->isNeedBypass() &&inst->numDestRegs() < 2){
+            //std::cout<<"NoSq:";inst->dump();
             auto bypassLoad = SRQ[inst->diffSSN];
             renameSrcRegs(inst, inst->threadNumber);
             mergeInsts(inst, bypassLoad, tid);
+            inst->setNoSQ();
+            inst->setNeedBypass();
         }else{
           inst->clearNeedBypass();
 
@@ -1208,6 +1226,19 @@ DefaultRename<Impl>::renameDestRegs(DynInstPtr &inst, ThreadID tid)
                             rename_result.second);
 
         ++renameRenamedOperands;
+      if (inst->needlvp >= 63 && inst->numDestRegs() == 1 ){
+              inst->setExecuted();
+              inst->setLVP();
+              inst->setBypassed();
+              if (inst->isInteger()){
+                inst->setIntRegOperand(
+                  inst->staticInst.get(), 0, inst->predValue);
+              }else{
+                inst->setFloatRegOperand(
+                  inst->staticInst.get(), 0, inst->predValue);
+              }
+      }
+
     }
 }
 

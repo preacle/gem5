@@ -1119,16 +1119,17 @@ DefaultFetch<Impl>::buildInst(ThreadID tid, StaticInstPtr staticInst,
     DynInstPtr instruction =
         new DynInst(staticInst, curMacroop, thisPC, nextPC, seq, ssn, cpu);
 
-    if (instruction->isLoad()){
+    if (instruction->isLoad() && !instruction->isNonSpeculative()
+    && instruction->numDestRegs() < 2
+  &&!instruction->isSquashed()&&!instruction->isMemBarrier()
+  &!instruction->isWriteBarrier()){
       cpu->loadPdt.getSSN(thisPC.pc(),
         instruction->diffSSN, instruction->needpdt);
-//std::cout<<"check bypass: diff"
-//<<instruction->diffSSN
-//<<" need:"<<instruction->needpdt<<"  ";instruction->dump();
-        if (instruction->needpdt >= 3 && instruction->numDestRegs() < 2){
-          instruction->setNeedBypass();
-        }
-
+      cpu->lvp.getValue(thisPC.pc(),
+        instruction->predValue, instruction->needlvp);
+      //  std::cout<<"check bypass: diff"
+      //  <<instruction->diffSSN
+    //    <<" need:"<<instruction->needpdt<<"  ";instruction->dump();
     }
 
     instruction->gSSN = cpu->getSSN();

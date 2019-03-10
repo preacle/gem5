@@ -60,6 +60,7 @@ if 'O3CPU' in env['CPU_MODELS']:
     Source('thread_context.cc')
     Source('svw.cc')
     Source('ssnpdt.cc')
+    Source('vpt.cc')
 
     DebugFlag('CommitRate')
     DebugFlag('IEW')

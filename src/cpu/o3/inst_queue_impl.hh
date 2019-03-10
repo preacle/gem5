@@ -1051,9 +1051,11 @@ InstructionQueue<Impl>::wakeDependents(DynInstPtr &completed_inst)
             // so that it knows which of its source registers is
             // ready.  However that would mean that the dependency
             // graph entries would need to hold the src_reg_idx.
-            dep_inst->markSrcRegReady();
+            if (!completed_inst->isBypassed()){
+              dep_inst->markSrcRegReady();
 
-            addIfReady(dep_inst);
+              addIfReady(dep_inst);
+            }
 
             dep_inst = dependGraph.pop(dest_reg->flatIndex());
 

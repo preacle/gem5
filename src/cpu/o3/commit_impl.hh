@@ -1006,12 +1006,15 @@ DefaultCommit<Impl>::commitInsts()
         if (head_inst -> isSquashDueToReexecute()){
           squash_flag = 1;
           head_inst->clearSquashDueToReexecute();
-          if (head_inst->isLoad() && head_inst->bypassSSN != 0
-                && head_inst->numDestRegs() < 2){
-                  uint64_t diffSSN = cpu->retireSSN - head_inst->bypassSSN;
-                  cpu->loadPdt.insert(head_inst->pcState().pc(),diffSSN);
-          }
+                  if (head_inst->isLoad() && head_inst->bypassSSN != 0
+              && head_inst->numDestRegs() < 2){
+                uint64_t diffSSN = cpu->retireSSN - head_inst->bypassSSN;
+                cpu->loadPdt.insert(head_inst->pcState().pc(),diffSSN);
         }
+        }
+
+
+
         ThreadID tid = head_inst->threadNumber;
 
         assert(tid == commit_thread);
@@ -1275,6 +1278,10 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
     }
 
     updateComInstStats(head_inst);
+
+    if (head_inst->isLoad()&& head_inst->numDestRegs() == 1
+      &&!head_inst->isSquashed()&&!head_inst->readPredicate())
+      cpu->lvp.insert(head_inst->pcState().pc(),head_inst->getIntRegAfterEx());
 
     if (FullSystem) {
         if (thread[tid]->profile) {

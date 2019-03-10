@@ -154,6 +154,10 @@ class BaseO3DynInst : public BaseDynInst<Impl>
       return this->cpu->readIntReg(this->_srcRegIdx[this->numSrcRegs() - 1]);
     }
 
+    IntReg getIntRegAfterEx(){
+      return this->cpu->readIntReg(this->_destRegIdx[0]);
+    }
+
     FloatReg getFloatRegMem(){
       return this->cpu->readFloatReg(this->_srcRegIdx[this->numSrcRegs() - 1]);
     }
@@ -392,9 +396,9 @@ class BaseO3DynInst : public BaseDynInst<Impl>
      */
     void setIntRegOperand(const StaticInst *si, int idx, IntReg val)
     {
-      //  if (this->isReexecuting()){
-      //      std::cout<<"setIntRegOperand: re-val:"<<val<<" ";this->dump();
-      //  }else{
+    //    if (this->isReexecuting()){
+    //        std::cout<<"setIntRegOperand: re-val:"<<val<<" ";this->dump();
+    //    }else{
     //      std::cout<<"setIntRegOperand: val:"<<val<<" ";this->dump();
     //    }
         this->cpu->setIntReg(this->_destRegIdx[idx], val);
@@ -413,6 +417,9 @@ class BaseO3DynInst : public BaseDynInst<Impl>
           memDataBuf.pop_front();
           for (int i=0; i<sizeof(IntReg); i++){
             if (*temp != *(this->reexecute_memData)){
+//std::cout<<"setIntRegOperand: re-val:"<<"need squash__"
+//<<"isNosq:"<<this->isNoSQ()<<"isLVP"<<this->isLVP();
+            //  this->dump();
               this->setSquashDueToReexecute();
               return;
             }

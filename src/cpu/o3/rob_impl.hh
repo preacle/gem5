@@ -501,10 +501,10 @@ template <class Impl>
 void
 ROB<Impl>::doReexcuteInst(ThreadID tid, DynInstPtr inst){
   // TODO REEXCUTE LOAD INST
-    if (inst->reexecute_memData == nullptr){
-      inst->setReexecuted();
-      return ;
-    }
+  //  if (inst->reexecute_memData == nullptr){
+  //    inst->setReexecuted();
+  //    return ;
+  //  }
     if (inst->isReexecuting()){
       return ;
     }
@@ -563,7 +563,7 @@ ROB<Impl>::doReexcute(ThreadID tid)
          return;
        }
        if (inst->isLoad() && !inst->isReexecuted()){
-         if (!cpu->SVWFilter.violation(inst)){
+         if (!cpu->SVWFilter.violation(inst) && !inst->isLVP()){
         //  if (!cpu->SVWFilter.violation(inst) && !inst->isNeedBypass()){
           //std::cout << inst->seqNum << " not find in SVW: ea"<<inst->effAddr;
           //inst->dump();

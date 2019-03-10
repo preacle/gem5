@@ -123,6 +123,8 @@ class BaseDynInst : public ExecContext, public RefCounted
         SerializeHandled,        /// Serialization has been handled
         NeedBypass,
         Bypassed,
+        NoSQ,
+        LVP,
         Reexecuted,
         Reexecuting,
         SquashDueToReexecute,
@@ -149,6 +151,8 @@ class BaseDynInst : public ExecContext, public RefCounted
 
   public:
     uint64_t needpdt = 0;
+
+    uint64_t needlvp = 0;
     /** The sequence number of the instruction. */
     InstSeqNum seqNum = 0;
 
@@ -233,6 +237,8 @@ class BaseDynInst : public ExecContext, public RefCounted
     /** The effective physical address
      *  of the second request for a split request
      */
+
+    uint64_t predValue;
 
     Addr physEffAddrHigh;
 
@@ -803,6 +809,18 @@ class BaseDynInst : public ExecContext, public RefCounted
     void clearBypassed() { status.reset(Bypassed);}
 
     bool isBypassed() const { return status[Bypassed]; }
+
+    bool isLVP() const { return status[LVP]; }
+
+    void setLVP() { status.set(LVP);}
+
+    void clearLVP() { status.reset(LVP);}
+
+    bool isNoSQ() const { return status[NoSQ]; }
+
+    void setNoSQ() { status.set(NoSQ);}
+
+    void clearNoSQ() { status.reset(NoSQ);}
 
     /** Sets this instruction as NEED SQUASH. */
     void setSquashDueToReexecute() { status.set(SquashDueToReexecute);}

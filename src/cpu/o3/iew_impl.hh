@@ -1245,25 +1245,11 @@ DefaultIEW<Impl>::executeInsts()
             if (inst->isLoad()) {
                 // Loads will mark themselves as executed, and their writeback
                 // event adds the instruction to the queue to commit
-                auto tid = inst->threadNumber;
-                if (!inst->isNeedBypass()&&inst->maybeBypassSSN != 0){
-                  if (ldstQueue.thread[tid].stores != 0){
-                    int storeHead = ldstQueue.thread[tid].storeHead;
-                    if (ldstQueue.thread[tid].storeQueue[storeHead].
-                      inst->seqNum<= inst->maybeBypassSSN){
-                            instQueue.deferMemInst(inst);
-                            continue;
-                      }
-                    }
-                  if (inst->isNeedBypass()&&!inst->BypassInst->effAddrValid()){
-                              instQueue.deferMemInst(inst);
-                              continue;
-                  }
 
-                  if (inst->isNeedBypass()&&inst->BypassInst->effAddrValid()){
+                  if (inst->isNeedBypass()&&inst->isNoSQ()
+                    &&inst->BypassInst->effAddrValid()){
                     inst->bpeffAddr = inst->BypassInst->effAddrValid();
                   }
-                }
                 fault = ldstQueue.executeLoad(inst);
 
                 if (inst->isTranslationDelayed() &&
@@ -1453,7 +1439,6 @@ DefaultIEW<Impl>::writebackInsts()
         // E.g. Strictly ordered loads have not actually executed when they
         // are first sent to commit.  Instead commit must tell the LSQ
         // when it's ready to execute the strictly ordered load.
-        if (inst->isBypassed()) continue;
         if (!inst->isSquashed() && inst->isExecuted()
             && inst->getFault() == NoFault) {
             int dependents = instQueue.wakeDependents(inst);

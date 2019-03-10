@@ -668,8 +668,10 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
         incrLdIdx(load_idx);
 
         if (inst->isNeedBypass()){
+          if (inst->isNoSQ()){
             auto binst = inst->BypassInst;
             binst->clearNeedBypass();
+          }
             /* have bypassed*/
             if (inst->isExecuted()){
               iewStage->instToCommit(inst);
