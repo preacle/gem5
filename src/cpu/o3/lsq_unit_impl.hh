@@ -670,7 +670,7 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
         if (inst->isNeedBypass()){
             auto binst = inst->BypassInst;
             binst->clearNeedBypass();
-            if (binst->effAddr == inst->effAddr){
+            if (inst->bpeffAddr == inst->effAddr){
               if (inst->isInteger()){
                 IntReg value = inst->getIntRegMem();
                 inst->setIntRegOperand(inst->staticInst.get(), 0, value);

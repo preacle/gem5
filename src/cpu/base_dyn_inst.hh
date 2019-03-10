@@ -223,12 +223,16 @@ class BaseDynInst : public ExecContext, public RefCounted
     /** The effective virtual address (lds & stores only). */
     Addr effAddr;
 
+    /** bypass ffective virtual address **/
+    Addr bpeffAddr;
+
     /** The effective physical address. */
     Addr physEffAddrLow;
 
     /** The effective physical address
      *  of the second request for a split request
      */
+
     Addr physEffAddrHigh;
 
     /** The memory request flags (from translation). */

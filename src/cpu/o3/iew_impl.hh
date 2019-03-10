@@ -1259,6 +1259,10 @@ DefaultIEW<Impl>::executeInsts()
                               instQueue.deferMemInst(inst);
                               continue;
                   }
+
+                  if (inst->isNeedBypass()&&inst->BypassInst->effAddrValid()){
+                    inst->bpeffAddr = inst->BypassInst->effAddrValid();
+                  }
                 }
                 fault = ldstQueue.executeLoad(inst);
 
