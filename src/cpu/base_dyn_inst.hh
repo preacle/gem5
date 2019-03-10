@@ -122,6 +122,7 @@ class BaseDynInst : public ExecContext, public RefCounted
         SerializeAfter,          /// Needs to serialize instructions behind it
         SerializeHandled,        /// Serialization has been handled
         NeedBypass,
+        Bypassed,
         Reexecuted,
         Reexecuting,
         SquashDueToReexecute,
@@ -796,6 +797,12 @@ class BaseDynInst : public ExecContext, public RefCounted
 
     /** Returns whether or not this instruction is NeedBypass. */
     bool isNeedBypass() const { return status[NeedBypass]; }
+
+    void setBypassed() { status.set(Bypassed);}
+
+    void clearBypassed() { status.reset(Bypassed);}
+
+    bool isBypassed() const { return status[Bypassed]; }
 
     /** Sets this instruction as NEED SQUASH. */
     void setSquashDueToReexecute() { status.set(SquashDueToReexecute);}

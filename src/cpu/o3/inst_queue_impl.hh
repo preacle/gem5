@@ -1418,7 +1418,11 @@ InstructionQueue<Impl>::addToProducers(DynInstPtr &new_inst)
         dependGraph.setInst(dest_reg->flatIndex(), new_inst);
 
         // Mark the scoreboard to say it's not yet ready.
-        regScoreboard[dest_reg->flatIndex()] = false;
+        if (new_inst->isLoad()&&new_inst->isExecuted()){
+          regScoreboard[dest_reg->flatIndex()] = true;
+        }else{
+          regScoreboard[dest_reg->flatIndex()] = false;
+        }
     }
 }
 

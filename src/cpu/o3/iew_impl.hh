@@ -1453,6 +1453,7 @@ DefaultIEW<Impl>::writebackInsts()
         // E.g. Strictly ordered loads have not actually executed when they
         // are first sent to commit.  Instead commit must tell the LSQ
         // when it's ready to execute the strictly ordered load.
+        if (inst->isBypassed()) continue;
         if (!inst->isSquashed() && inst->isExecuted()
             && inst->getFault() == NoFault) {
             int dependents = instQueue.wakeDependents(inst);

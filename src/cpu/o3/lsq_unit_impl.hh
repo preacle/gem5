@@ -670,6 +670,13 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
         if (inst->isNeedBypass()){
             auto binst = inst->BypassInst;
             binst->clearNeedBypass();
+            /* have bypassed*/
+            if (inst->isExecuted()){
+              iewStage->instToCommit(inst);
+              iewStage->activityThisCycle();
+              return load_fault;
+            }
+
             if (inst->bpeffAddr == inst->effAddr){
               if (inst->isInteger()){
                 IntReg value = inst->getIntRegMem();

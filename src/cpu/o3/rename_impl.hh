@@ -336,8 +336,19 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
                       rename_result.second);
   dest->flattenDestReg(0, tcSrc->flattenRegId(src_reg));
   dest->clearCanIssue();
-  if (scoreboard->getReg(renamed_reg))
-      dest->markSrcRegReady(dest->numSrcRegs()-1);
+  if (scoreboard->getReg(renamed_reg) && dest->needpdt >= 3){
+    dest->setExecuted();
+    dest->setBypassed();
+    dest->markSrcRegReady(dest->numSrcRegs()-1);
+    if (dest->isInteger()){
+      IntReg value = dest->getIntRegMem();
+      dest->setIntRegOperand(dest->staticInst.get(), 0, value);
+    }else{
+      FloatReg value = dest->getFloatRegMem();
+      dest->setFloatRegOperand(dest->staticInst.get(), 0, value);
+    }
+  }
+
   src->setNeedBypass();
 }
 
