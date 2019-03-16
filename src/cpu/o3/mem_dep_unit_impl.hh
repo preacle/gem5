@@ -353,7 +353,6 @@ MemDepUnit<MemDepPred, Impl>::regsReady(DynInstPtr &inst)
     if (inst_entry->memDepReady) {
         DPRINTF(MemDepUnit, "Instruction has its memory "
                 "dependencies resolved, adding it to the ready list.\n");
-
         moveToReady(inst_entry);
     } else {
         DPRINTF(MemDepUnit, "Instruction still waiting on "
@@ -579,7 +578,6 @@ MemDepUnit<MemDepPred, Impl>::moveToReady(MemDepEntryPtr &woken_inst_entry)
             "to the ready list.\n", woken_inst_entry->inst->seqNum);
 
     assert(!woken_inst_entry->squashed);
-
     iqPtr->addReadyMemInst(woken_inst_entry->inst);
 }
 

@@ -462,6 +462,10 @@ DefaultIEW<Impl>::squash(ThreadID tid)
 
     while (!skidBuffer[tid].empty()) {
         if (skidBuffer[tid].front()->isLoad()) {
+            if (skidBuffer[tid].front()->BypassInst){
+              skidBuffer[tid].front()->BypassInst->clearNeedBypass();
+              skidBuffer[tid].front()->BypassInst = NULL;
+            }
             toRename->iewInfo[tid].dispatchedToLQ++;
         }
         if (skidBuffer[tid].front()->isStore()) {
@@ -513,6 +517,11 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
     // case the memory violator should take precedence over the branch
     // misprediction because it requires the violator itself to be included in
     // the squash.
+    if (inst->BypassInst){
+      inst->BypassInst->clearNeedBypass();
+      inst->BypassInst = NULL;
+    }
+
     if (!toCommit->squash[tid] ||
             inst->seqNum <= toCommit->squashedSeqNum[tid]) {
         toCommit->squash[tid] = true;
@@ -860,6 +869,10 @@ DefaultIEW<Impl>::emptyRenameInsts(ThreadID tid)
 
         if (insts[tid].front()->isLoad()) {
             toRename->iewInfo[tid].dispatchedToLQ++;
+              if (insts[tid].front()->BypassInst){
+                insts[tid].front()->BypassInst->clearNeedBypass();
+                insts[tid].front()->BypassInst=NULL;
+              }
         }
         if (insts[tid].front()->isStore()) {
             toRename->iewInfo[tid].dispatchedToSQ++;
@@ -1001,6 +1014,10 @@ DefaultIEW<Impl>::dispatchInsts(ThreadID tid)
 
             //Tell Rename That An Instruction has been processed
             if (inst->isLoad()) {
+                if (inst->BypassInst){
+                  inst->BypassInst->clearNeedBypass();
+                  inst->BypassInst = NULL;
+                }
                 toRename->iewInfo[tid].dispatchedToLQ++;
             }
             if (inst->isStore()) {
@@ -1246,10 +1263,29 @@ DefaultIEW<Impl>::executeInsts()
                 // Loads will mark themselves as executed, and their writeback
                 // event adds the instruction to the queue to commit
 
-                  if (inst->isNeedBypass()&&inst->isNoSQ()
-                    &&inst->BypassInst->effAddrValid()){
-                    inst->bpeffAddr = inst->BypassInst->effAddrValid();
+                if (inst->BypassInst
+                  //&&inst->BypassInst->readPredicate()
+                  &&!inst->BypassInst->readyToCommit())
+                {
+                  std::cout<<"NOSQ_bypass1"<<inst->BypassInst->effAddr
+                  <<" "<<inst->BypassInst->effSize
+                  <<" "<<inst->BypassInst->saved_value;inst->dump();
+                  instQueue.deferMemInst(inst);
+                  continue;
+                }else if (inst->BypassInst){
+                  inst->bpeffAddr = inst->BypassInst->effAddr;
+                  inst->bpeffSize = inst->BypassInst->effSize;
+                  inst->predValue =  inst->BypassInst->saved_value;
+                  std::cout<<"NOSQ_bypass"
+                  <<inst->BypassInst->effAddr
+                  <<" "<<inst->BypassInst->effSize
+                  <<" "<<inst->BypassInst->saved_value;inst->dump();
+                  if (inst->BypassInst) {
+                    inst->BypassInst->clearNeedBypass();
+                    inst->BypassInst = NULL;
                   }
+                }
+                std::cout<<"NOSQ_bypass";inst->dump();
                 fault = ldstQueue.executeLoad(inst);
 
                 if (inst->isTranslationDelayed() &&

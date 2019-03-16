@@ -125,8 +125,12 @@ def template LoadInitiateAcc {{
     {
         Addr EA;
         Fault fault = NoFault;
-
         %(op_src_decl)s;
+        if(xc->getMemSizeOnly){
+          xc->memSize = sizeof(Mem);
+          xc->getMemSizeOnly = false;
+          return NoFault;
+        }
         %(op_rd)s;
         %(ea_code)s;
 
@@ -204,8 +208,16 @@ def template StoreInitiateAcc {{
         Fault fault = NoFault;
 
         %(op_decl)s;
+
+        if(xc->getMemSizeOnly){
+          xc->memSize = sizeof(Mem);
+          xc->getMemSizeOnly = false;
+          return NoFault;
+        }
+
         %(op_rd)s;
         %(ea_code)s;
+
 
         if (fault == NoFault) {
             %(memacc_code)s;

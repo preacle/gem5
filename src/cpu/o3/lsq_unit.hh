@@ -634,7 +634,7 @@ LSQUnit<Impl>::read(const RequestPtr &req,
         return NoFault;
     }
 
-    while (store_idx != -1) {
+    while (store_idx != -1 && false) {
         // End once we've reached the top of the LSQ
         if (store_idx == storeWBIdx) {
             break;
@@ -887,8 +887,14 @@ LSQUnit<Impl>::write(const RequestPtr &req,
     }
 
     if (!(req->getFlags() & Request::CACHE_BLOCK_ZERO) && \
-        !req->isCacheMaintenance())
-        memcpy(storeQueue[store_idx].data, data, size);
+        !req->isCacheMaintenance()){
+          memcpy(storeQueue[store_idx].data, data, size);
+          storeQueue[store_idx].inst->reexecute_memData = new uint8_t(size);
+          memcpy(storeQueue[store_idx].inst->reexecute_memData,data,size);
+          storeQueue[store_idx].inst->saved_value
+            = *((uint64_t*)(storeQueue[store_idx].inst->reexecute_memData));
+          storeQueue[store_idx].inst->v_saved_value = 1;
+        }
 
     // This function only writes the data to the store queue, so no fault
     // can happen here.

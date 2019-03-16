@@ -373,8 +373,9 @@ class DefaultIEW
     /** Records if the queues have been changed (inserted or issued insts),
      * so that IEW knows to broadcast the updated amount of free entries.
      */
+  public:
     bool updatedQueues;
-
+  private:
     /** Commit to IEW delay. */
     Cycles commitToIEWDelay;
 

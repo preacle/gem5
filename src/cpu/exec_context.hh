@@ -83,6 +83,9 @@ class ExecContext {
     using VecElem = TheISA::VecElem;
 
     int testLast = -1;
+    bool getMemSizeOnly = false;
+    uint64_t memSize = 0;
+
   public:
     /**
      * @{
@@ -99,7 +102,17 @@ class ExecContext {
 
     /** @} */
 
+    virtual bool isNeedBypass(){
+        return false;
+    }
 
+    virtual bool setAddr(uint64_t addr){
+        return false;
+    }
+
+    virtual bool setAddrSize(uint64_t sz){
+      return false;
+    }
     /**
      * @{
      * @name Floating Point Register Interfaces

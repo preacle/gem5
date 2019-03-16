@@ -115,4 +115,3 @@ class RdWrPort(FUDesc):
 class IprPort(FUDesc):
     opList = [ OpDesc(opClass='IprAccess', opLat = 3, pipelined = False) ]
     count = 1
-

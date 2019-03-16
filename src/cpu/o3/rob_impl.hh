@@ -505,16 +505,12 @@ ROB<Impl>::doReexcuteInst(ThreadID tid, DynInstPtr inst){
   //    inst->setReexecuted();
   //    return ;
   //  }
-    if (inst->isReexecuting()){
-      return ;
-    }
-    delete inst->memData;
-    inst->memData = nullptr;
     Fault load_fault = NoFault;
 
-  //  inst->dump();
+  //  std::cout<<inst->seqNum<<" ";inst->dump();
     inst->translationStarted(false);
     inst->translationCompleted(false);
+    cpu->re_load_nums++;
     inst->setReexecuting();
     //inst->setReexecuted();
     load_fault = cpu->iew.ldstQueue.thread[tid].ReexecuteLoad(inst);
@@ -540,6 +536,13 @@ ROB<Impl>::doReexcute(ThreadID tid)
          return;
        }
 
+       if (inst->isStore()){
+          if (inst->readPredicate()&&inst->effSize!=0){
+            cpu->SVWFilter.insert(inst);
+          }
+           inst->setReexecuted();
+         return;
+       }
        if (inst->isSquashed()||inst->isNonSpeculative()||inst->isMemBarrier()
           ||inst->isWriteBarrier()){
          inst->setReexecuted();
@@ -547,30 +550,23 @@ ROB<Impl>::doReexcute(ThreadID tid)
        }
       // if (!inst->readPredicate()||inst->isControl()||
        //inst->isMacroop()||inst->isMicroop()||inst->isAtomic()){
-       if (!inst->readPredicate()){
+
+
+
+      if (!inst->readPredicate()){
          inst->setReexecuted();
          continue;
        }
 
-       if (inst->isStore()){
-         if (inst->isReexecuted()){
-         }else{
-           //std::cout << inst->seqNum << " INSERT SVW: ea"<<inst->effAddr;
-           //inst->dump();
-           cpu->SVWFilter.insert(inst);
-           inst->setReexecuted();
-         }
-         return;
-       }
        if (inst->isLoad() && !inst->isReexecuted()){
-         if (!cpu->SVWFilter.violation(inst) && !inst->isLVP()){
-        //  if (!cpu->SVWFilter.violation(inst) && !inst->isNeedBypass()){
-          //std::cout << inst->seqNum << " not find in SVW: ea"<<inst->effAddr;
-          //inst->dump();
-           inst->setReexecuted();
-           continue;
-         }
-         else{
+         if (inst->isReexecuting()) continue;
+         if (cpu->SVWFilter.violation(inst)
+          ||inst->isLVP() ||inst->isNeedReexecute()){
+           std::cout<<"reload:"
+           <<double(cpu->re_load_nums)/double(cpu->load_nums)
+           <<"lvp :"<<double(cpu->num_lvp)/double(cpu->load_nums)
+           <<"nosq:"<<double(cpu->num_nosq)/double(cpu->load_nums)
+           <<"sap :"<<double(cpu->num_sap)/double(cpu->load_nums)<<std::endl;
            //std::cout << inst->seqNum << " find in SVW: ea"<<inst->effAddr;
            //inst->dump();
            if (cpu->iew.ldstQueue.thread[tid].stores != 0){
@@ -581,6 +577,14 @@ ROB<Impl>::doReexcute(ThreadID tid)
            }
            doReexcuteInst(tid,inst);
            cntReexcuteNum++;
+          // std::cout<<"NOSQ:"<<inst->isNoSQ()<
+          //<" LVP:"<<inst->isLVP()<<" SAP:"
+          //<<inst->isSAP()<<" "<<cntReexcuteNum<<std::endl;
+           continue;
+
+         }
+         else{
+           inst->setReexecuted();
            continue;
          }
        }

@@ -1015,7 +1015,8 @@ InstructionQueue<Impl>::wakeDependents(DynInstPtr &completed_inst)
     if (completed_inst->isMemRef()) {
         memDepUnit[completed_inst->threadNumber].wakeDependents(completed_inst);
         completeMemInst(completed_inst);
-    } else if (completed_inst->isMemBarrier() ||
+    } else
+   if (completed_inst->isMemBarrier() ||
                completed_inst->isWriteBarrier()) {
         memDepUnit[completed_inst->threadNumber].completeBarrier(completed_inst);
     }
@@ -1077,6 +1078,7 @@ template <class Impl>
 void
 InstructionQueue<Impl>::addReadyMemInst(DynInstPtr &ready_inst)
 {
+    iewStage->updatedQueues = true;
     OpClass op_class = ready_inst->opClass();
 
     readyInsts[op_class].push(ready_inst);
@@ -1168,6 +1170,15 @@ InstructionQueue<Impl>::getDeferredMemInstToExecute()
 {
     for (ListIt it = deferredMemInsts.begin(); it != deferredMemInsts.end();
          ++it) {
+        if (!(*it)->translationCompleted()){
+          if ((*it)->BypassInst
+          &&(!(*it)->BypassInst->readPredicate()
+          ||(*it)->BypassInst->v_saved_value != 0)){
+            DynInstPtr mem_inst = *it;
+            deferredMemInsts.erase(it);
+            return mem_inst;
+          }
+        }
         if ((*it)->translationCompleted() || (*it)->isSquashed()) {
             DynInstPtr mem_inst = *it;
             deferredMemInsts.erase(it);
@@ -1233,6 +1244,12 @@ InstructionQueue<Impl>::doSquash(ThreadID tid)
            (*squash_it)->seqNum > squashedSeqNum[tid]) {
 
         DynInstPtr squashed_inst = (*squash_it);
+
+        if (squashed_inst->BypassInst){
+          squashed_inst->BypassInst->clearNeedBypass();
+          squashed_inst->BypassInst = NULL;
+        }
+
         if (squashed_inst->isFloating()) {
             fpInstQueueWrites++;
         } else if (squashed_inst->isVector()) {
@@ -1444,7 +1461,6 @@ InstructionQueue<Impl>::addIfReady(DynInstPtr &inst)
             // Message to the mem dependence unit that this instruction has
             // its registers ready.
             memDepUnit[inst->threadNumber].regsReady(inst);
-
             return;
         }
 

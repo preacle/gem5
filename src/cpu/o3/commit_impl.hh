@@ -1004,14 +1004,53 @@ DefaultCommit<Impl>::commitInsts()
           break;
         }
         if (head_inst -> isSquashDueToReexecute()){
-          squash_flag = 1;
-          head_inst->clearSquashDueToReexecute();
-                  if (head_inst->isLoad() && head_inst->bypassSSN != 0
-              && head_inst->numDestRegs() < 2){
-                uint64_t diffSSN = cpu->retireSSN - head_inst->bypassSSN;
-                cpu->loadPdt.insert(head_inst->pcState().pc(),diffSSN);
+            squash_flag = 1;
+            head_inst->clearSquashDueToReexecute();
+            uint64_t diffSSN = head_inst->gSSN - head_inst->bypassSSN;
+            std::cout<<"pc: "<<head_inst->pcState().pc()
+            <<" gSSN"<<head_inst->gSSN<<" violate: "<<diffSSN
+            <<" "<<head_inst->diffSSN<<" V:"<<head_inst->pdt_v
+            <<"isNeed"<<head_inst->isNeedReexecute()<<" needbypass"
+            <<head_inst->isNeedBypass()<<" SSN:"<<head_inst->SSN
+            <<" needpdt:"<<head_inst->needpdt
+            <<" effAddr:"<<head_inst->effAddr
+            <<" effbyAddr:"<<head_inst->bpeffAddr
+            <<" effAddrSize:"<<head_inst->effSize
+            <<" effbyAddr:"<<head_inst->bpeffSize<<std::endl;
+            if (head_inst->numDestRegs() == 1 && head_inst->bypassSSN != 0){
+              uint64_t diffSSN = head_inst->gSSN - head_inst->bypassSSN;
+              cpu->loadPdt.insertLoad(head_inst->pcState().pc(),
+              head_inst->bypassPC,diffSSN);
+            }
+            if (head_inst->numDestRegs() == 1){
+              if (head_inst->readPredicate()){
+                cpu->lvp.insert(head_inst->pcState().pc(),
+                  head_inst->saved_value);
+                cpu->sap.insert(head_inst->pcState().pc(), head_inst->effAddr);
+              }else{
+                cpu->lvp.clear(head_inst->pcState().pc());
+            //      head_inst->getIntRegAfterEx());
+                cpu->sap.clear(head_inst->pcState().pc());
+              }
+            }
+
+            if (head_inst->isNoSQ()){
+              cpu->num_nosq_miss++;
+            }
+              std::cout<<"nosq miss ratio:"
+              <<float(cpu->num_nosq_miss)/cpu->num_nosq<<std::endl;
+            if (head_inst->isSAP()){
+              std::cout<<"sap  miss ratio:"
+                <<float(cpu->num_sap_miss++)/cpu->num_sap<<std::endl;
+            }
+
+            if (head_inst->isLVP()){
+              std::cout<<"lvp  miss ratio:"
+                <<float(cpu->num_lvp_miss++)/cpu->num_lvp<<std::endl;
+            }
+            //l0->clear(head_inst->pcState().pc());
         }
-        }
+
 
 
 
@@ -1220,6 +1259,53 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
         head_inst->setCompleted();
     }
 
+    if (head_inst->isStore()&&!head_inst->isSquashed()){
+              std::cout<<"need_check,store,"
+              <<head_inst->microPC()<<","
+              <<head_inst->effAddr<<","
+              <<head_inst->SSN<<","
+              <<head_inst->pcState().pc()
+              <<","<<head_inst->saved_value<<",";head_inst->dump();
+      if ( !head_inst->isSquashed()&&head_inst->readPredicate())
+      //head_inst->isNoSQ()&&head_inst->readPredicate()&&
+        cpu->l0.insert(head_inst->effAddr,
+          head_inst->saved_value,head_inst->SSN,head_inst->effSize);
+//      else{
+//        cpu->l0.clear(head_inst->effAddr);
+//    }
+    }
+    if (head_inst->isLoad()){
+      std::cout<<"need_check,0,"<<head_inst->microPC()
+      <<","<<head_inst->effAddr<<","<<head_inst->gSSN
+      <<","<<head_inst->pcState().pc()<<","
+      <<head_inst->saved_value<<",";head_inst->dump();
+    }
+    if (head_inst->isLoad() && !head_inst->isSquashed()
+      && head_inst->numDestRegs() == 1){
+      std::cout<<"need_check,1,"<<head_inst->microPC()
+      <<","<<head_inst->effAddr<<","<<head_inst->gSSN
+      <<","<<head_inst->pcState().pc()<<","
+      <<head_inst->saved_value<<",";head_inst->dump();
+      cpu->sap.insert(head_inst->pcState().pc(), head_inst->effAddr);
+    }
+
+    if (head_inst->isLoad()&& head_inst->numDestRegs() == 1
+      &&!head_inst->isSquashed()){
+        cpu->lvp.insert(head_inst->pcState().pc(),head_inst->saved_value);
+    }
+    if (!head_inst->readPredicate()){
+        cpu->lvp.clear(head_inst->pcState().pc());
+        cpu->sap.clear(head_inst->pcState().pc());
+    }
+/*
+    if (head_inst->isLoad() && head_inst->bypassSSN != 0
+      && head_inst->numDestRegs() == 1 && !head_inst->isSquashed()){
+        uint64_t diffSSN = head_inst->gSSN - head_inst->bypassSSN;
+        if (diffSSN < 30)
+          cpu->loadPdt.
+          insert(head_inst->pcState().pc(),head_inst->hist,diffSSN);
+    }
+*/
     if (inst_fault != NoFault) {
         DPRINTF(Commit, "Inst [sn:%lli] PC %s has a fault\n",
                 head_inst->seqNum, head_inst->pcState());
@@ -1278,10 +1364,6 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
     }
 
     updateComInstStats(head_inst);
-
-    if (head_inst->isLoad()&& head_inst->numDestRegs() == 1
-      &&!head_inst->isSquashed()&&!head_inst->readPredicate())
-      cpu->lvp.insert(head_inst->pcState().pc(),head_inst->getIntRegAfterEx());
 
     if (FullSystem) {
         if (thread[tid]->profile) {

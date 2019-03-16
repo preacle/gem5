@@ -283,6 +283,7 @@ DefaultRename<Impl>::setRenameMap(RenameMap rm_ptr[])
         renameMap[tid] = &rm_ptr[tid];
 }
 
+/********************************
 template <class Impl>
 void
 DefaultRename<Impl>::
@@ -295,7 +296,7 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
   RenameMap *map = renameMap[tid];
   dest->BypassInst = src;
 
-  /*ARM ONLY*/
+  //ARM ONLY
   ThreadContext *tcSrc = dest->tcBase();
   const RegId&  src_reg = src->srcRegIdx(5);
   auto renamed_reg = map->lookup(tcSrc->flattenRegId(src_reg));
@@ -362,7 +363,92 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
 
   src->setNeedBypass();
 }
+************************************/
+template <class Impl>
+void
+DefaultRename<Impl>::
+mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
+{
+  //因为ARM的存储结果太复杂,
+  //所以采用指令相关的方法,而不采用寄存器重命名
 
+//  std::cout<<"mergeInst: "<<dest->seqNum<<std::endl;
+//  dest->dump();
+//  src->dump();
+  dest->SSN = src->SSN;
+  RenameMap *map = renameMap[tid];
+
+
+  /*ARM ONLY*/
+  //ThreadContext *tcSrc = dest->tcBase();
+//  const RegId&  src_reg = src->srcRegIdx(5);
+  //auto renamed_reg = map->lookup(tcSrc->flattenRegId(src_reg));
+
+
+  ThreadContext *tcDest = dest->tcBase();
+  const RegId&  dest_reg = dest->destRegIdx(0);
+  RegId flat_dest_regid = tcDest->flattenRegId(dest_reg);
+
+  // Rename Dest Register
+  auto rename_result = map->rename(flat_dest_regid);
+
+  dest->flattenDestReg(0,flat_dest_regid);
+//  std::cout<<dest_reg<<std::endl;
+//  std::cout<<src_reg<<std::endl;
+  scoreboard->unsetReg(rename_result.first);
+
+  DPRINTF(Rename, "[tid:%u]: Renaming arch reg %i (%s) to physical "
+          "reg %i (%i).\n", tid, dest_reg.index(),
+          dest_reg.className(),
+          rename_result.first->index(),
+          rename_result.first->flatIndex());
+
+  // Record the rename information so that a history can be kept.
+  RenameHistory hb_entry(dest->seqNum, flat_dest_regid,
+                         rename_result.first,
+                         rename_result.second);
+
+  historyBuffer[tid].push_front(hb_entry);
+
+  DPRINTF(Rename, "[tid:%u]: Adding instruction to history buffer "
+          "(size=%i), [sn:%lli].\n",tid,
+          historyBuffer[tid].size(),
+          (*historyBuffer[tid].begin()).instSeqNum);
+
+
+
+  // Tell the instruction to rename the appropriate destination
+  // register (dest_idx) to the new physical register
+  // (rename_result.first), and record the previous physical
+  // register that the same logical register was renamed to
+  // (rename_result.second).
+  dest->renameDestReg(0,
+                      rename_result.first,
+                      rename_result.second);
+  ++renameRenamedOperands;
+
+  if (src->readyToCommit()
+    &&src->v_saved_value != 0&&!src->isStoreConditional()){
+    if (dest->needpdt >= 63 && src->effSize && src->effSize == dest->effSize){
+      auto value = src->saved_value;
+      dest->setExecuted();
+      dest->bpeffSize = src->effSize;
+      dest->bpeffAddr = src->effAddr;
+      dest->setBypassed();
+
+      if (dest->isInteger()){
+        //IntReg value = dest->getIntRegMem();
+        dest->setIntRegOperand(dest->staticInst.get(), 0, value);
+      }else{
+        //FloatReg value = dest->getFloatRegMem();
+        dest->setFloatRegOperand(dest->staticInst.get(), 0, value);
+      }
+      return ;
+    }
+  }
+    dest->BypassInst = src;
+    src->setNeedBypass();
+}
 template <class Impl>
 void
 DefaultRename<Impl>::setFreeList(FreeList *fl_ptr)
@@ -456,8 +542,19 @@ DefaultRename<Impl>::squash(const InstSeqNum &squash_seq_num, ThreadID tid)
     // insts in them.
     insts[tid].clear();
 
+    //for (auto inst:insts[tid])
+    //  if (inst->BypassInst) {
+    //    inst->BypassInst->clearNeedBypass();
+    //    inst->BypassInst = NULL;
+    //  }
+
     // Clear the skid buffer in case it has any data in it.
     skidBuffer[tid].clear();
+  //  for (auto inst:skidBuffer[tid])
+  //    if (inst->BypassInst) {
+  //      inst->BypassInst->clearNeedBypass();
+  //      inst->BypassInst = NULL;
+  //    }
 
     while (SRQ.size() != 0&&SRQ.front()->seqNum >= squash_seq_num){
       SRQ.pop_front();
@@ -695,6 +792,10 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
         }
 
         if (inst->isStore()) {
+            if (SRQ.size() == 128 && SRQ.back()->isNeedBypass()){
+              DPRINTF(Rename, "[tid:%u]: Cannot rename due to no free SRQ\n");
+              break;
+            }
             if (calcFreeSQEntries(tid) <= 0) {
                 DPRINTF(Rename, "[tid:%u]: Cannot rename due to no free SQ\n");
                 source = SQ;
@@ -783,37 +884,67 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
             serializeAfter(insts_to_rename, tid);
         }
 
-        if (inst->needlvp >= 63){
-          renameSrcRegs(inst, inst->threadNumber);
-          renameDestRegs(inst, inst->threadNumber);
-          inst->setNeedBypass();
-          //std::cout<<"LVP :";inst->dump();
-        }
-        else
-        if (inst->needpdt >= 1&& inst-> diffSSN < SRQ.size()
-          && !SRQ[inst->diffSSN]->isNeedBypass() &&inst->numDestRegs() < 2){
-            //std::cout<<"NoSq:";inst->dump();
-            auto bypassLoad = SRQ[inst->diffSSN];
-            renameSrcRegs(inst, inst->threadNumber);
-            mergeInsts(inst, bypassLoad, tid);
-            inst->setNoSQ();
-            inst->setNeedBypass();
-        }else{
-          inst->clearNeedBypass();
-
-          renameSrcRegs(inst, inst->threadNumber);
-
-          renameDestRegs(inst, inst->threadNumber);
-        }
-
-
         if (inst->isLoad()) {
                 loadsInProgress[tid]++;
         }
         if (inst->isStore()) {
                 SRQ.push_front(inst);
+                if (SRQ.size() > 128)
+                  SRQ.pop_back();
+                //std::cout<<SRQ.size()<<std::endl;
                 storesInProgress[tid]++;
         }
+        //uint64_t dssn = cpu->getSSN() - inst->gSSN + inst->diffSSN;
+        uint64_t dssn = inst->diffSSN;
+        if (inst->pdt_v&&inst-> diffSSN >= SRQ.size()){
+                          inst->pdt_v = 0;
+        }
+    //    if (inst->pdt_v&&SRQ[dssn]->
+    //v_saved_value!=0&& SRQ[dssn]->effSize==0){
+    //      inst->pdt_v = 0;
+    //    }
+        if (inst->sap_v&&(inst->needsap < 31 ||! cpu->l0.
+          getValue(inst->predAddr,inst->predValue,inst->SSN,inst->effSize)))
+                inst->sap_v = 0;
+
+        if (inst->pdt_v && inst->needpdt >= 1 && inst->numDestRegs() == 1){
+            //std::cout<<"NoSq:";inst->dump();
+            auto bypassLoad = SRQ[dssn];;
+            renameSrcRegs(inst, inst->threadNumber);
+            mergeInsts(inst, bypassLoad, tid);
+            bypassLoad->setNoSQ();
+            inst->setNoSQ();
+            inst->setNeedBypass();
+            std::cout<<"Nosq:";inst->dump();
+            for (auto i:SRQ)
+              i->dump();
+            cpu->num_nosq++;
+        }
+        else if (inst->sap_v &&
+            inst->needsap >= 63 &&inst->numDestRegs() == 1){
+            inst->setNeedBypass();
+            inst->setSAP();
+            renameSrcRegs(inst, inst->threadNumber);
+            renameDestRegs(inst, inst->threadNumber);
+            std::cout<<"SAP :";inst->dump();
+            cpu->num_sap++;
+        }
+        else if (inst->lvp_v &&
+            inst->needlvp >= 63 && inst->numDestRegs() == 1){
+          inst->setNeedBypass();
+          inst->setLVP();
+          renameSrcRegs(inst, inst->threadNumber);
+          renameDestRegs(inst, inst->threadNumber);
+          std::cout<<"LVP :";inst->dump();
+          cpu->num_lvp++;
+        }else{
+          if (inst->isLoad())
+            inst->clearNeedBypass();
+          renameSrcRegs(inst, inst->threadNumber);
+          renameDestRegs(inst, inst->threadNumber);
+        }
+
+
         ++renamed_insts;
         // Notify potential listeners that source and destination registers for
         // this instruction have been renamed.
@@ -1088,11 +1219,11 @@ DefaultRename<Impl>::removeFromHistory(InstSeqNum inst_seq_num, ThreadID tid)
     // rename histories if they did not have destination registers that were
     // renamed.
     InstSeqNum freeSeqNum = inst_seq_num;
-    while (SRQ.size() != 0&&SRQ.back()->seqNum <= inst_seq_num&&
-      !SRQ.back()->isNeedBypass()){
-        freeSeqNum = SRQ.back()->seqNum;
-        SRQ.pop_back();
-    }
+    //while (SRQ.size() != 0&&SRQ.back()->seqNum <= inst_seq_num&&
+    //  !SRQ.back()->isNeedBypass()){
+    //    freeSeqNum = SRQ.back()->seqNum;
+  //      SRQ.pop_back();
+//    }
     while (!historyBuffer[tid].empty() &&
            hb_it != historyBuffer[tid].end() &&
            hb_it->instSeqNum <= freeSeqNum) {
@@ -1226,9 +1357,8 @@ DefaultRename<Impl>::renameDestRegs(DynInstPtr &inst, ThreadID tid)
                             rename_result.second);
 
         ++renameRenamedOperands;
-      if (inst->needlvp >= 63 && inst->numDestRegs() == 1 ){
+      if (inst->isNeedBypass() && inst->numDestRegs() == 1){
               inst->setExecuted();
-              inst->setLVP();
               inst->setBypassed();
               if (inst->isInteger()){
                 inst->setIntRegOperand(

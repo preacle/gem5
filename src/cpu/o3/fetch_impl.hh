@@ -565,7 +565,7 @@ DefaultFetch<Impl>::lookupAndUpdateNextPC(
     ThreadID tid = inst->threadNumber;
     predict_taken = branchPred->predict(inst->staticInst, inst->seqNum,
                                         nextPC, tid);
-
+    cpu->ght.insert(inst->seqNum,predict_taken);
     if (predict_taken) {
         DPRINTF(Fetch, "[tid:%i]: [sn:%i]:  Branch predicted to be taken to %s.\n",
                 tid, inst->seqNum, nextPC);
@@ -1030,9 +1030,12 @@ DefaultFetch<Impl>::checkSignalsAndUpdate(ThreadID tid)
                               fromCommit->commitInfo[tid].pc,
                               fromCommit->commitInfo[tid].branchTaken,
                               tid);
+            cpu->ght.squash(fromCommit->commitInfo[tid].doneSeqNum,
+              fromCommit->commitInfo[tid].branchTaken);
         } else {
             branchPred->squash(fromCommit->commitInfo[tid].doneSeqNum,
                               tid);
+            cpu->ght.squash(fromCommit->commitInfo[tid].doneSeqNum);
         }
 
         return true;
@@ -1040,6 +1043,7 @@ DefaultFetch<Impl>::checkSignalsAndUpdate(ThreadID tid)
         // Update the branch predictor if it wasn't a squashed instruction
         // that was broadcasted.
         branchPred->update(fromCommit->commitInfo[tid].doneSeqNum, tid);
+        cpu->ght.squash(fromCommit->commitInfo[tid].doneSeqNum);
     }
 
     // Check squash signals from decode.
@@ -1053,9 +1057,12 @@ DefaultFetch<Impl>::checkSignalsAndUpdate(ThreadID tid)
                               fromDecode->decodeInfo[tid].nextPC,
                               fromDecode->decodeInfo[tid].branchTaken,
                               tid);
+          cpu->ght.squash(fromCommit->commitInfo[tid].doneSeqNum,
+                        fromCommit->commitInfo[tid].branchTaken);
         } else {
             branchPred->squash(fromDecode->decodeInfo[tid].doneSeqNum,
                               tid);
+            cpu->ght.squash(fromCommit->commitInfo[tid].doneSeqNum);
         }
 
         if (fetchStatus[tid] != Squashing) {
@@ -1111,28 +1118,46 @@ DefaultFetch<Impl>::buildInst(ThreadID tid, StaticInstPtr staticInst,
     InstSeqNum seq = cpu->getAndIncrementInstSeq();
     StoreSeqNum ssn = 0;
     if(staticInst->isStore()){
-         ssn = cpu->getSSN();
          cpu->IncrementSSN();
+         ssn = cpu->getSSN();
     }
     // Create a new DynInst from the instruction fetched.
-
     DynInstPtr instruction =
         new DynInst(staticInst, curMacroop, thisPC, nextPC, seq, ssn, cpu);
+    if (instruction->isStore()){
+             uint64_t trueIdx =
+             ((instruction->pcState().pc() >> 1)<<4)+instruction->microPC()%16;
+          //   if (!instruction->isMacroop() && !instruction->isMicroop()){
+          //     cpu->loadPdt.insertStore(trueIdx,cpu->getSSN());
+        //     }else{
+        //       cpu->loadPdt.invaild(trueIdx);
+        //       std::cout<<"isMacroop::";instruction->dump();
+        //     }
+             cpu->loadPdt.insertStore(trueIdx,cpu->getSSN());
+    }
+    instruction->gSSN = cpu->getSSN();
 
+    //获取指令读取/写回数据的长度
+
+    if (instruction->isLoad())
+      instruction->hist = cpu->ght.getHist()%1024;
     if (instruction->isLoad() && !instruction->isNonSpeculative()
-    && instruction->numDestRegs() < 2
-  &&!instruction->isSquashed()&&!instruction->isMemBarrier()
-  &!instruction->isWriteBarrier()){
-      cpu->loadPdt.getSSN(thisPC.pc(),
+      && instruction->numDestRegs() < 2
+      &&!instruction->isSquashed()&&!instruction->isMemBarrier()
+      &&!instruction->isWriteBarrier()){
+      instruction->pdt_v = cpu->loadPdt.getSSN(thisPC.pc(),instruction->gSSN,
         instruction->diffSSN, instruction->needpdt);
-      cpu->lvp.getValue(thisPC.pc(),
+      instruction->lvp_v = cpu->lvp.getValue(thisPC.pc(),
         instruction->predValue, instruction->needlvp);
-      //  std::cout<<"check bypass: diff"
-      //  <<instruction->diffSSN
-    //    <<" need:"<<instruction->needpdt<<"  ";instruction->dump();
+    //  instruction->sap_v = cpu->sap.getValue(thisPC.pc(),
+    //    instruction->predAddr ,instruction->needsap);
+        std::cout<<"check bypass: diff"
+        <<instruction->diffSSN
+        <<" need:"<<instruction->needpdt<<"  ";instruction->dump();
+
     }
 
-    instruction->gSSN = cpu->getSSN();
+
 
     instruction->setTid(tid);
 

@@ -15,14 +15,15 @@ class SVW{
   public:
     typedef typename Impl::DynInstPtr DynInstPtr;
   public:
-    int depCheckShift = 2;
+    int depCheckShift = 0;
     class svwItem{
         public:
             bool VAILD;
             SVWTag_t TAG;
             SVWStoreSeqNum_t SSN;
-        svwItem(bool valid,SVWTag_t tag,SVWStoreSeqNum_t ssn)
-        :VAILD(valid),TAG(tag),SSN(ssn){}
+            uint64_t PC;
+        svwItem(bool valid,SVWTag_t tag,SVWStoreSeqNum_t ssn, uint64_t pc)
+        :VAILD(valid),TAG(tag),SSN(ssn),PC(pc){}
     };
     vector<list<svwItem> > svwItems;
     uint64_t size;
@@ -30,17 +31,17 @@ class SVW{
 public:
     SVW(size_t sz,size_t assoc):size(sz),assoc(assoc){
         svwItems = vector<list<svwItem>>
-          (sz,list<svwItem> (assoc,svwItem(0,0,0)));
+          (sz,list<svwItem> (assoc,svwItem(0,0,0,0)));
     }
 
 
-    void insert(SVWKey_t key, SVWTag_t tag, SVWStoreSeqNum_t ssn){
+    void insert(SVWKey_t key, SVWTag_t tag, SVWStoreSeqNum_t ssn, uint64_t pc){
         svwItems[key].pop_back();
-        svwItems[key].push_front(svwItem(true,tag,ssn));
+        svwItems[key].push_front(svwItem(true,tag,ssn,pc));
     }
 
     void insert(DynInstPtr &inst){
-      if (inst->effAddr == 0)
+      if (inst->effAddr == 0||inst->effSize == 0)
         return;
       auto inst_eff_addr1 = inst->effAddr >> depCheckShift;
       auto inst_eff_addr2 =
@@ -48,20 +49,26 @@ public:
       for (auto addr = inst_eff_addr1; addr <= inst_eff_addr2; addr++){
         SVWKey_t key = addr % size;
         SVWTag_t tag = addr / size;
-        insert(key,tag,inst->SSN);
+        uint64_t trueIdx = ((inst->pcState().pc() >> 1)<<4)+inst->microPC()%16;
+        insert(key,tag,inst->SSN,trueIdx);
       }
+      std::cout<<"SSN&GSSN"
+      <<inst->SSN<<" "
+      <<inst->gSSN
+      <<inst->pcState().pc()
+      <<std::endl;
     }
 
-    pair<SVWStoreSeqNum_t,bool> search(SVWKey_t key,SVWTag_t tag){
+    pair<SVWStoreSeqNum_t,uint64_t> search(SVWKey_t key,SVWTag_t tag){
         SVWStoreSeqNum_t ret = 0;
         for (auto i:svwItems[key]){
             if (i.VAILD && i.TAG == tag){
-                return pair<SVWStoreSeqNum_t,bool>(i.SSN,true);
+                return pair<SVWStoreSeqNum_t,bool>(i.SSN,i.PC);
             }else{
                 ret = i.SSN;
             }
         }
-        return pair<SVWStoreSeqNum_t,bool>(ret,false);
+        return pair<SVWStoreSeqNum_t,bool>(ret,0);
     }
 
     bool violation(DynInstPtr &inst){
@@ -76,9 +83,11 @@ public:
         SVWTag_t tag = addr / size;
         auto ret = search(key, tag);
         SVWStoreSeqNum_t ssn = ret.first;
-        if (ret.second)
+        if (ret.second){
           inst->bypassSSN = ssn;
-        if (ssn > inst->SSN){
+          inst->bypassPC = ret.second;
+        }
+        if (ssn > inst->SSN||(inst->isBypassed() && inst->SSN != ssn)){
           return true;
         }
       }

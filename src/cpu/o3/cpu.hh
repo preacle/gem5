@@ -122,8 +122,19 @@ class FullO3CPU : public BaseO3CPU
 
     SVW<Impl> SVWFilter;
     SSNPDT loadPdt;
+    GHT ght;
+    int num_nosq = 0;
+    int num_nosq_miss = 0;
     LVP lvp;
+    int num_lvp = 0;
+    int num_lvp_miss = 0;
+    SAP sap;
+    int num_sap = 0;
+    int num_sap_miss = 0;
+    L0CACHE l0;
 
+    int load_nums = 0;
+    int re_load_nums = 0;
   public:
     enum Status {
         Running,

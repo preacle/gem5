@@ -44,6 +44,9 @@
 #ifndef __CPU_O3_FETCH_HH__
 #define __CPU_O3_FETCH_HH__
 
+#include <map>
+#include <queue>
+
 #include "arch/decoder.hh"
 #include "arch/utility.hh"
 #include "base/statistics.hh"

@@ -617,10 +617,19 @@ LSQUnit<Impl>::ReexecuteLoad(DynInstPtr &inst)
     // todo:copy olddata
 
     load_fault = inst->initiateAcc();
+    if (inst->isLVP()&&(load_fault != NoFault || !inst->readPredicate())) {
+        // Send this instruction to commit, also make sure iew stage
+        // realizes there is activity.  Mark it as executed unless it
+        // is a strictly ordered load that needs to hit the head of
+        // commit.
+        if (!inst->readPredicate()){
+            inst->forwardOldRegs();
+            inst->setReexecuted();
+            std::cout<<"squashDueToMemOrder::ReexecuteLoad LVP"<<std::endl;
+            iewStage->squashDueToMemOrder(inst,inst->threadNumber);
+        }
+      }
 
-    if (inst->isTranslationDelayed() &&
-        load_fault == NoFault)
-        return load_fault;
     return load_fault;
 }
 
@@ -638,9 +647,15 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
     assert(!inst->isSquashed());
 
     // set SSN
-    load_fault = inst->initiateAcc();
+    if (inst->isLVP()){
+      cpu->load_nums++;
+      iewStage->instToCommit(inst);
+      iewStage->activityThisCycle();
+      return NoFault;
+    }
 
-    if (inst->isTranslationDelayed() &&
+    load_fault = inst->initiateAcc();
+    if (!inst->isNeedBypass()&&inst->isTranslationDelayed() &&
         load_fault == NoFault)
         return load_fault;
 
@@ -660,40 +675,95 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
             inst->isAtCommit()) {
             inst->setExecuted();
         }
+        //因为现在算法比较激进
+        //在发射前可能数据就bypass了
+        //导致后面的指令已经得到了错误的值
+        //可能需要重新执行
+        //可能做更激进的优化
+        //就是比较现在值和以前值
+        //如果相等就不squash
+        if (inst->isBypassed()&&!inst->readPredicate()){
+          inst->setReexecuted();
+          std::cout<<"squashDueToMemOrder::executeLoad"<<std::endl;
+          iewStage->squashDueToMemOrder(inst,inst->threadNumber);
+        }
+
         iewStage->instToCommit(inst);
         iewStage->activityThisCycle();
     } else {
-        assert(inst->effAddrValid());
+
+        cpu->load_nums++;
+        std::cout<<"dump load1:";inst->dump();
+        //assert(inst->_effAddr);
         int load_idx = inst->lqIdx;
         incrLdIdx(load_idx);
 
         if (inst->isNeedBypass()){
-          if (inst->isNoSQ()){
-            auto binst = inst->BypassInst;
-            binst->clearNeedBypass();
-          }
-            /* have bypassed*/
+// 如果需要bypass
+// 那么如果是已经bypass的指令
+//1.是NoSQ.如果bypass的源指令不执行,那么需要重执行
+//2.是NoSQ,如果源指令执行,那么直接提交
+//3.不是NoSQ,提交
+
             if (inst->isExecuted()){
+              if (inst->isNoSQ()&&inst->bpeffAddr == 0){ //
+                  inst->setNeedReexecute();
+              }
+            //  inst->setNeedReexecute();
               iewStage->instToCommit(inst);
               iewStage->activityThisCycle();
               return load_fault;
             }
+//如果没有执行,那么一定是NoSQ指令或者是普通执行指令
+//如果是NoSQ,如果地址相等(大小一样),就从寄存器中取值
+//如果地址不等,执行Load
 
-            if (inst->bpeffAddr == inst->effAddr){
+          //现在考虑大小不同问题
+          inst->dump();std::cout<<inst->bpeffAddr<<std::endl;
+          inst->dump();std::cout<<inst->effAddr<<std::endl;
+          inst->dump();std::cout<<inst->effSize<<std::endl;
+          inst->dump();std::cout<<inst->bpeffSize<<std::endl;
+
+            if (inst->bpeffAddr <= inst->effAddr && inst->effAddr+inst->effSize
+              <= inst->bpeffAddr+inst->bpeffSize && inst->bpeffSize != 0){
+              std::cout<<"111:"<<inst->predValue;;inst->dump();
+              uint8_t* x = new uint8_t(sizeof(uint64_t));
+              std::cout<<"222";inst->dump();
+              for (int i=0;i<sizeof(uint64_t);i++){
+                x[i] = 0;
+              }
+              memset(x+inst->effAddr - inst->bpeffAddr,0xff,inst->effSize);
+              std::cout<<"333"<<std::endl;
+              inst->predValue &= *(uint64_t*)(x);
+              std::cout<<"444"<<std::endl;
+              inst->predValue =
+                inst->predValue<<(inst->effAddr - inst->bpeffAddr);
+              std::cout<<"555:"<<inst->predValue;inst->dump();
+              //memcpy(x,src,inst->effSize);
+            //  inst->predValue = *((uint64_t*)(src));
               if (inst->isInteger()){
-                IntReg value = inst->getIntRegMem();
-                inst->setIntRegOperand(inst->staticInst.get(), 0, value);
+                inst->setIntRegOperand(
+                    inst->staticInst.get(), 0, inst->predValue);
               }else{
-                FloatReg value = inst->getFloatRegMem();
-                inst->setFloatRegOperand(inst->staticInst.get(), 0, value);
+                inst->setFloatRegOperand(
+                  inst->staticInst.get(), 0, inst->predValue);
               }
               iewStage->instToCommit(inst);
               iewStage->activityThisCycle();
               inst->setExecuted();
             }
             else{
+//对于Bypass指令,
+//会设计标志位NeedBypass,
+//意思为只执行一半也就是只获取TLB
+//执行时候,
+//已经消除了需要bypass的可能,
+//所以需要执行另一半.于是从头开始执行.
               inst->clearNeedBypass();
               inst->SSN  = cpu->getRetireSSN();
+              inst->translationStarted(false);
+              inst->translationCompleted(false);
+              inst->initiateAcc();
             }
         }else{
           inst->SSN  = cpu->getRetireSSN();
@@ -1059,6 +1129,11 @@ LSQUnit<Impl>::squash(const InstSeqNum &squashed_num)
             stallingLoadIdx = 0;
         }
 
+        if (loadQueue[load_idx]->BypassInst){
+          loadQueue[load_idx]->BypassInst->clearNeedBypass();
+          loadQueue[load_idx]->BypassInst = NULL;
+        }
+
         // Clear the smart pointer to make sure it is decremented.
         loadQueue[load_idx]->setSquashed();
         loadQueue[load_idx] = NULL;
@@ -1170,6 +1245,9 @@ LSQUnit<Impl>::writeback(DynInstPtr &inst, PacketPtr pkt)
 
     if (inst->isNeedBypass() && !inst->isReexecuting())
         return;
+//如果执行的包延迟到达,那么会有两个重复的包. 应该抛弃
+  //  if (inst->isReexecuted())
+  //      return;
 
     if (!inst->isExecuted()) {
         inst->setExecuted();
@@ -1190,10 +1268,20 @@ LSQUnit<Impl>::writeback(DynInstPtr &inst, PacketPtr pkt)
     }
 
     if(inst->isReexecuting()) {
-        //printf("reex finshed-----------\n");
-        //inst->dump();
         inst->completeAcc(pkt);
         if (inst->isSquashDueToReexecute()){
+          if (inst->isNoSQ())
+            std::cout<<"squashDueToMemOrder::ReexecuteLoad WB::NoSQ"
+              <<std::endl;
+          else if (inst->isSAP())
+            std::cout<<"squashDueToMemOrder::ReexecuteLoad WB::SAP"
+              <<std::endl;
+          else if (inst->isLVP())
+            std::cout<<"squashDueToMemOrder::ReexecuteLoad WB::LVP"
+              <<std::endl;
+          else
+            std::cout<<"squashDueToMemOrder::ReexecuteLoad WB::SMP"
+              <<std::endl;
           iewStage->squashDueToMemOrder(inst,inst->threadNumber);
           return;
         }

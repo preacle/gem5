@@ -125,6 +125,8 @@ class BaseDynInst : public ExecContext, public RefCounted
         Bypassed,
         NoSQ,
         LVP,
+        SAP,
+        NeedReexecute,
         Reexecuted,
         Reexecuting,
         SquashDueToReexecute,
@@ -145,14 +147,21 @@ class BaseDynInst : public ExecContext, public RefCounted
         IsStrictlyOrdered,
         ReqMade,
         MemOpDone,
-        NeedReexecute,
         MaxFlags
     };
 
   public:
+    uint64_t hist = 0;
+
     uint64_t needpdt = 0;
+    bool pdt_v = false;
 
     uint64_t needlvp = 0;
+    bool lvp_v = false;
+
+    uint64_t needsap = 0;
+    bool sap_v = false;
+
     /** The sequence number of the instruction. */
     InstSeqNum seqNum = 0;
 
@@ -166,6 +175,9 @@ class BaseDynInst : public ExecContext, public RefCounted
 
     StoreSeqNum diffSSN = 0;   // gloabSSN - SSNbypassSSN;
     /** The StaticInst used by this BaseDynInst. */
+
+    uint64_t bypassPC = 0;
+
     const StaticInstPtr staticInst;
 
     DynInstPtr BypassInst = nullptr;
@@ -185,6 +197,8 @@ class BaseDynInst : public ExecContext, public RefCounted
     Trace::InstRecord *traceData;
 
     std::vector<RegId> addSrcReg;
+
+    int cnt_BP = 0;
 
   protected:
     /** The result of the instruction; assumes an instruction can have many
@@ -226,17 +240,35 @@ class BaseDynInst : public ExecContext, public RefCounted
   public:
     /////////////////////// Load Store Data //////////////////////
     /** The effective virtual address (lds & stores only). */
-    Addr effAddr;
+    Addr effAddr = 0;
 
-    /** bypass ffective virtual address **/
-    Addr bpeffAddr;
+    // calculated EA Size
 
+    /** bypass effective virtual address **/
+    Addr bpeffAddr = 0;
+
+    Addr bpeffSize = 0;
+
+    Addr predAddr;
     /** The effective physical address. */
     Addr physEffAddrLow;
 
     /** The effective physical address
      *  of the second request for a split request
      */
+
+     bool setAddr(uint64_t addr) override
+     {
+          effAddr = addr;
+         return true;
+     }
+
+   bool setAddrSize(uint64_t sz) override
+   {
+     std::cout<<"setAddrSize"<<sz<<std::endl;
+       effSize = sz;
+       return true;
+   }
 
     uint64_t predValue;
 
@@ -249,7 +281,9 @@ class BaseDynInst : public ExecContext, public RefCounted
     short asid;
 
     /** The size of the request */
-    uint8_t effSize;
+    uint64_t effSize = 0;
+
+    uint64_t effBpSize;
 
     /** Pointer to the data for the memory access. */
     uint8_t *memData;
@@ -257,6 +291,10 @@ class BaseDynInst : public ExecContext, public RefCounted
     /** Pointer to the data for the Reexecute memory access.**/
 
     uint8_t *reexecute_memData;
+
+    uint64_t saved_value;
+
+    uint8_t v_saved_value = 0;
 
     /** Load queue index. */
     int16_t lqIdx;
@@ -796,10 +834,35 @@ class BaseDynInst : public ExecContext, public RefCounted
     /** Returns whether or not this instruction is Reexecuting. */
     bool isReexecuting() const { return status[Reexecuting]; }
 
-    /** Sets this instruction as NeedBypass. */
-    void setNeedBypass() { status.set(NeedBypass);}
+    void setNeedReexecute() { status.set(NeedReexecute);}
 
-    void clearNeedBypass() { status.reset(NeedBypass);}
+    void clearNeedReexecute() { status.reset(NeedReexecute);}
+
+    bool isNeedReexecute() const { return status[NeedReexecute]; }
+
+
+    /** Sets this instruction as NeedBypass. */
+    void setNeedBypass() {
+        if (isStore()){
+          cnt_BP++;
+        }
+        status.set(NeedBypass);
+      }
+
+    void clearNeedBypass() {
+        if (isStore()){
+          cnt_BP--;
+          if (cnt_BP == 0){
+            status.reset(NeedBypass);
+            return;
+          }
+          if (cnt_BP == -1){
+            panic("store bypass error");
+          }
+          return;
+        }
+       status.reset(NeedBypass);
+     }
 
     /** Returns whether or not this instruction is NeedBypass. */
     bool isNeedBypass() const { return status[NeedBypass]; }
@@ -815,6 +878,12 @@ class BaseDynInst : public ExecContext, public RefCounted
     void setLVP() { status.set(LVP);}
 
     void clearLVP() { status.reset(LVP);}
+
+    bool isSAP() const { return status[SAP]; }
+
+    void setSAP() { status.set(SAP);}
+
+    void clearSAP() { status.reset(SAP);}
 
     bool isNoSQ() const { return status[NoSQ]; }
 
@@ -928,14 +997,6 @@ class BaseDynInst : public ExecContext, public RefCounted
     /**Read the micro PC of this instruction. */
     Addr microPC() const { return pc.microPC(); }
 
-    bool readNeedReexecute(){
-      return instFlags[NeedReexecute];
-    }
-
-    void setNeedReexecute(bool val)
-    {
-      instFlags[NeedReexecute] = val;
-    }
     bool readPredicate()
     {
         return instFlags[Predicate];
@@ -1002,6 +1063,14 @@ Fault
 BaseDynInst<Impl>::initiateMemRead(Addr addr, unsigned size,
                                    Request::Flags flags)
 {
+  if (this->isNeedBypass()&&!this->isReexecuting()){
+    //对于值旁路的指令,我们只计算地址.不读数据.
+    //如果是重执行要往下走下去
+    setAddr(addr);
+    setAddrSize(size);
+    instFlags[EffAddrValid] = true;
+    return NoFault;
+  }
     DPRINTF(Reexecute,"Reexecute-initiateMemRead-1\n");
     instFlags[ReqMade] = true;
     RequestPtr req = NULL;
@@ -1211,5 +1280,7 @@ BaseDynInst<Impl>::finishTranslation(WholeTranslationState *state)
 
     translationCompleted(true);
 }
+
+
 
 #endif // __CPU_BASE_DYN_INST_HH__
