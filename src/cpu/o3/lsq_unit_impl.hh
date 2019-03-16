@@ -719,10 +719,11 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
 //如果地址不等,执行Load
 
           //现在考虑大小不同问题
-          inst->dump();std::cout<<inst->bpeffAddr<<std::endl;
-          inst->dump();std::cout<<inst->effAddr<<std::endl;
-          inst->dump();std::cout<<inst->effSize<<std::endl;
-          inst->dump();std::cout<<inst->bpeffSize<<std::endl;
+          std::cout<<"cachebpinfo:"<<inst->seqNum;inst->dump();
+          std::cout<<"cachebpinfo:"<<inst->bpeffAddr;inst->dump();
+          std::cout<<"cachebpinfo:"<<inst->effAddr;inst->dump();
+          std::cout<<"cachebpinfo:"<<inst->effSize;inst->dump();
+          std::cout<<"cachebpinfo:"<<inst->bpeffSize;inst->dump();
 
             if (inst->bpeffAddr <= inst->effAddr && inst->effAddr+inst->effSize
               <= inst->bpeffAddr+inst->bpeffSize && inst->bpeffSize != 0){
@@ -741,11 +742,11 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
               std::cout<<"555:"<<inst->predValue;inst->dump();
               //memcpy(x,src,inst->effSize);
             //  inst->predValue = *((uint64_t*)(src));
-              if (inst->isInteger()){
-                inst->setIntRegOperand(
+              if (inst->isFloating()){
+                inst->setFloatRegOperand(
                     inst->staticInst.get(), 0, inst->predValue);
               }else{
-                inst->setFloatRegOperand(
+                inst->setIntRegOperand(
                   inst->staticInst.get(), 0, inst->predValue);
               }
               iewStage->instToCommit(inst);

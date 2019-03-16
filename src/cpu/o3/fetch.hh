@@ -311,7 +311,8 @@ class DefaultFetch
 
     /** Squashes a specific thread and resets the PC. */
     inline void doSquash(const TheISA::PCState &newPC,
-                         const DynInstPtr squashInst, ThreadID tid);
+                         const DynInstPtr squashInst, ThreadID tid,
+                       uint64_t squashed_ssn);
 
     /** Squashes a specific thread and resets the PC. Also tells the CPU to
      * remove any instructions between fetch and decode that should be sqaushed.

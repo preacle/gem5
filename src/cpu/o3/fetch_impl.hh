@@ -748,7 +748,9 @@ DefaultFetch<Impl>::finishTranslation(const Fault &fault,
 template <class Impl>
 inline void
 DefaultFetch<Impl>::doSquash(const TheISA::PCState &newPC,
-                             const DynInstPtr squashInst, ThreadID tid)
+                             const DynInstPtr squashInst,
+                            ThreadID tid ,
+                            uint64_t squashed_ssn)
 {
     DPRINTF(Fetch, "[tid:%i]: Squashing, setting PC to: %s.\n",
             tid, newPC);
@@ -756,14 +758,15 @@ DefaultFetch<Impl>::doSquash(const TheISA::PCState &newPC,
 
     if (squashInst){
 
-        DPRINTF(SSN,"squash ssn %d.\n",squashInst->SSN);
+        DPRINTF(SSN,"squash ssn %d.\n",squashInst->gSSN);
         StoreSeqNum SSN = squashInst->gSSN;
         if (squashInst->isStore()){
                 cpu->setSSN(SSN - 1);
         }else{
           cpu->setSSN(SSN);
         }
-
+    }else if (squashed_ssn){
+      cpu->setSSN(squashed_ssn);
     }
     pc[tid] = newPC;
     fetchOffset[tid] = 0;
@@ -818,7 +821,7 @@ DefaultFetch<Impl>::squashFromDecode(const TheISA::PCState &newPC,
 {
     DPRINTF(Fetch, "[tid:%i]: Squashing from decode.\n", tid);
 
-    doSquash(newPC, squashInst, tid);
+    doSquash(newPC, squashInst, tid, 0);
 
     // Tell the CPU to remove any instructions that are in flight between
     // fetch and decode.
@@ -888,7 +891,7 @@ DefaultFetch<Impl>::squash(const TheISA::PCState &newPC,
 {
     DPRINTF(Fetch, "[tid:%u]: Squash from commit.\n", tid);
 
-    doSquash(newPC, squashInst, tid);
+    doSquash(newPC, squashInst, tid, fromCommit->commitInfo[tid].gSSN);
 
     // Tell the CPU to remove any instructions that are not in the ROB.
     cpu->removeInstsNotInROB(tid);

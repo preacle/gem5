@@ -126,11 +126,16 @@ BaseO3DynInst<Impl>::initVars()
 
 if (this->isLoad() || this->isStore()){
   string name = this->staticInst->getName();
+
+  if (name.find("ld") != std::string::npos){
+    this->effSize = sizeof(uint64_t);
+    return ;
+  }
   if (name.find("sb") != std::string::npos){
-    std::cout<<"name:dump:"<<name<<std::endl;
     this->effSize = sizeof(int8_t);
     return ;
   }
+
   if (name.find("ub") != std::string::npos){
     this->effSize = sizeof(uint8_t);
     return ;
@@ -145,10 +150,6 @@ if (this->isLoad() || this->isStore()){
   }
   if (name.find("sw") != std::string::npos){
     this->effSize = sizeof(int32_t);
-    return ;
-  }
-  if (name.find("ud") != std::string::npos){
-    this->effSize = sizeof(int64_t);
     return ;
   }
   if (name.find("uw") != std::string::npos){
@@ -170,6 +171,21 @@ if (this->isLoad() || this->isStore()){
   }
   if (name.find("df") != std::string::npos){
     this->effSize = sizeof(double);
+    return ;
+  }
+
+  if (name.find("w") != std::string::npos){
+    this->effSize = sizeof(uint32_t);
+    return ;
+  }
+
+  if (name.find("b") != std::string::npos){
+    this->effSize = sizeof(uint8_t);
+    return ;
+  }
+
+    if (name.find("d") != std::string::npos){
+    this->effSize = sizeof(uint64_t);
     return ;
   }
 }

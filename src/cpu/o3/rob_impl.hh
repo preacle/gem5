@@ -532,7 +532,8 @@ ROB<Impl>::doReexcute(ThreadID tid)
        //std::cout<<"reex:"<<inst->seqNum<<" ";inst->dump();
        head_it++;
 
-       if (!inst->readyToCommit() || inst->isSquashDueToReexecute()){
+       if (!inst->readyToCommit() || inst->isSquashDueToReexecute()
+       ||inst->isSquashed()){
          return;
        }
 
@@ -543,25 +544,37 @@ ROB<Impl>::doReexcute(ThreadID tid)
            inst->setReexecuted();
          return;
        }
-       if (inst->isSquashed()||inst->isNonSpeculative()||inst->isMemBarrier()
+
+       if (inst->isNonSpeculative()||inst->isMemBarrier()
           ||inst->isWriteBarrier()){
          inst->setReexecuted();
          return;
        }
+
+
+
       // if (!inst->readPredicate()||inst->isControl()||
        //inst->isMacroop()||inst->isMicroop()||inst->isAtomic()){
 
 
 
-      if (!inst->readPredicate()){
+      if (!inst->readPredicate()||inst->effSize == 0){
          inst->setReexecuted();
          continue;
        }
 
+//每次最多一条指令访存
        if (inst->isLoad() && !inst->isReexecuted()){
-         if (inst->isReexecuting()) continue;
-         if (cpu->SVWFilter.violation(inst)
-          ||inst->isLVP() ||inst->isNeedReexecute()){
+         if (inst->isReexecuting()) return;
+         bool vio = cpu->SVWFilter.violation(inst);
+         if (vio){
+           cpu->iew.squashDueToMemOrder(inst,inst->threadNumber);
+          // inst->setReexecuted();
+           inst->setCanCommit();
+           cpu->iew.activityThisCycle();
+           inst->setSquashed();
+           return ;
+  }else if (inst->isLVP() ||inst->isNeedReexecute()){
            std::cout<<"reload:"
            <<double(cpu->re_load_nums)/double(cpu->load_nums)
            <<"lvp :"<<double(cpu->num_lvp)/double(cpu->load_nums)
@@ -580,7 +593,7 @@ ROB<Impl>::doReexcute(ThreadID tid)
           // std::cout<<"NOSQ:"<<inst->isNoSQ()<
           //<" LVP:"<<inst->isLVP()<<" SAP:"
           //<<inst->isSAP()<<" "<<cntReexcuteNum<<std::endl;
-           continue;
+           return;
 
          }
          else{

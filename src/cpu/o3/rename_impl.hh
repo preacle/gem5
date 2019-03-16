@@ -899,6 +899,10 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
         if (inst->pdt_v&&inst-> diffSSN >= SRQ.size()){
                           inst->pdt_v = 0;
         }
+        //可能被Commit释放了，ｔｏｄｏ
+        if (inst->pdt_v&&!SRQ[dssn]){
+              inst->pdt_v = 0;
+        }
     //    if (inst->pdt_v&&SRQ[dssn]->
     //v_saved_value!=0&& SRQ[dssn]->effSize==0){
     //      inst->pdt_v = 0;

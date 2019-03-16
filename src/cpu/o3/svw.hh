@@ -83,7 +83,7 @@ public:
         SVWTag_t tag = addr / size;
         auto ret = search(key, tag);
         SVWStoreSeqNum_t ssn = ret.first;
-        if (ret.second){
+        if (ret.second){ //有可能ＰＣ为0，TODO
           inst->bypassSSN = ssn;
           inst->bypassPC = ret.second;
         }

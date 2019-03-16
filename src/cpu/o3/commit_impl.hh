@@ -894,6 +894,7 @@ DefaultCommit<Impl>::commit()
                 fromIEW->branchTaken[tid];
             toIEW->commitInfo[tid].squashInst =
                                     rob->findInst(tid, squashed_inst);
+            toIEW->commitInfo[tid].gSSN = fromIEW->fixedSSN[tid];
             if (toIEW->commitInfo[tid].mispredictInst) {
                 if (toIEW->commitInfo[tid].mispredictInst->isUncondCtrl()) {
                      toIEW->commitInfo[tid].branchTaken = true;

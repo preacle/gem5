@@ -192,6 +192,7 @@ struct DefaultIEWDefaultCommit {
     DynInstPtr mispredictInst[Impl::MaxThreads];
     Addr mispredPC[Impl::MaxThreads];
     InstSeqNum squashedSeqNum[Impl::MaxThreads];
+    StoreSeqNum fixedSSN[Impl::MaxThreads];
     TheISA::PCState pc[Impl::MaxThreads];
 
     bool squash[Impl::MaxThreads];
@@ -289,6 +290,8 @@ struct TimeBufStruct {
         /// squashed.  Similar to having a single bus that broadcasts the
         /// retired or squashed sequence number.
         InstSeqNum doneSeqNum; // *F, I
+
+        StoreSeqNum gSSN;
 
         /// Tell Rename how many free entries it has in the ROB
         unsigned freeROBEntries; // *R

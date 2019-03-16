@@ -491,6 +491,7 @@ DefaultIEW<Impl>::squashDueToBranch(DynInstPtr &inst, ThreadID tid)
             inst->seqNum < toCommit->squashedSeqNum[tid]) {
         toCommit->squash[tid] = true;
         toCommit->squashedSeqNum[tid] = inst->seqNum;
+        toCommit->fixedSSN[tid] = inst->gSSN;
         toCommit->branchTaken[tid] = inst->pcState().branching();
 
         TheISA::PCState pc = inst->pcState();
@@ -509,6 +510,7 @@ template<class Impl>
 void
 DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
 {
+    ++memOrderViolationEvents;
     DPRINTF(IEW, "[tid:%i]: Memory violation, squashing violator and younger "
             "insts, PC: %s [sn:%i].\n", tid, inst->pcState(), inst->seqNum);
     // Need to include inst->seqNum in the following comparison to cover the
@@ -517,16 +519,25 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
     // case the memory violator should take precedence over the branch
     // misprediction because it requires the violator itself to be included in
     // the squash.
+
+    //update pdt
+  //  if (inst->numDestRegs() == 1 && inst->bypassSSN != 0){
+//            uint64_t diffSSN = inst->gSSN - inst->bypassSSN;
+  //          cpu->loadPdt.insertLoad(inst->pcState().pc(),
+//            inst->bypassPC,diffSSN);
+//    }
     if (inst->BypassInst){
       inst->BypassInst->clearNeedBypass();
       inst->BypassInst = NULL;
     }
-
+    if (inst->isSquashed())
+      return ;
     if (!toCommit->squash[tid] ||
             inst->seqNum <= toCommit->squashedSeqNum[tid]) {
         toCommit->squash[tid] = true;
 
         toCommit->squashedSeqNum[tid] = inst->seqNum;
+        toCommit->fixedSSN[tid] = inst->gSSN;
         TheISA::PCState pc = inst->pcState();
         if (inst->isSquashDueToReexecute()){
           TheISA::advancePC(pc, inst->staticInst);
@@ -535,10 +546,15 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
         toCommit->pc[tid] = pc;
         toCommit->mispredictInst[tid] = NULL;
 
-        if (!inst->isSquashDueToReexecute())
-          // Must include the memory violator in the squash.
+        if (inst->isSquashDueToReexecute()){
+          toCommit->includeSquashInst[tid] = false;
+        }else{
+            // Must include the memory violator in the squash.
           toCommit->includeSquashInst[tid] = true;
+        }
 
+
+        inst->setSquashDueToReexecute();
         wroteToTimeBuffer = true;
     }
 }
@@ -1408,7 +1424,6 @@ DefaultIEW<Impl>::executeInsts()
                 // Squash.
                  //squashDueToMemOrder(violator, tid);
 
-                ++memOrderViolationEvents;
             }
         } else {
             // Reset any state associated with redirects that will not
