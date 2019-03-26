@@ -725,12 +725,12 @@ DefaultDecode<Impl>::decodeInsts(ThreadID tid)
            (inst->isUncondCtrl() || inst->readPredTaken()))
         {
             ++decodeBranchResolved;
-
             if (!(inst->branchTarget() == inst->readPredTarg())) {
                 ++decodeBranchMispred;
 
                 // Might want to set some sort of boolean and just do
                 // a check at the end
+
                 squash(inst, inst->threadNumber);
                 TheISA::PCState target = inst->branchTarget();
 
@@ -738,6 +738,7 @@ DefaultDecode<Impl>::decodeInsts(ThreadID tid)
                         inst->seqNum, target);
                 //The micro pc after an instruction level branch should be 0
                 inst->setPredTarg(target);
+
                 break;
             }
         }

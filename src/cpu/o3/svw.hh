@@ -52,11 +52,6 @@ public:
         uint64_t trueIdx = ((inst->pcState().pc() >> 1)<<4)+inst->microPC()%16;
         insert(key,tag,inst->SSN,trueIdx);
       }
-      std::cout<<"SSN&GSSN"
-      <<inst->SSN<<" "
-      <<inst->gSSN
-      <<inst->pcState().pc()
-      <<std::endl;
     }
 
     pair<SVWStoreSeqNum_t,uint64_t> search(SVWKey_t key,SVWTag_t tag){

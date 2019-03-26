@@ -1056,6 +1056,8 @@ DefaultFetch<Impl>::checkSignalsAndUpdate(ThreadID tid)
 
         // Update the branch predictor.
         if (fromDecode->decodeInfo[tid].branchMispredict) {
+      //    std::cout<<"fromDecode->decodeInfo[tid].branchMispredict："
+      //    <<fromDecode->decodeInfo[tid].branchTaken<<std::endl;
             branchPred->squash(fromDecode->decodeInfo[tid].doneSeqNum,
                               fromDecode->decodeInfo[tid].nextPC,
                               fromDecode->decodeInfo[tid].branchTaken,
@@ -1149,14 +1151,11 @@ DefaultFetch<Impl>::buildInst(ThreadID tid, StaticInstPtr staticInst,
       &&!instruction->isSquashed()&&!instruction->isMemBarrier()
       &&!instruction->isWriteBarrier()){
       instruction->pdt_v = cpu->loadPdt.getSSN(thisPC.pc(),instruction->gSSN,
-        instruction->diffSSN, instruction->needpdt);
-      instruction->lvp_v = cpu->lvp.getValue(thisPC.pc(),
-        instruction->predValue, instruction->needlvp);
+       instruction->diffSSN, instruction->needpdt);
+  //    instruction->lvp_v = cpu->lvp.getValue(thisPC.pc(),
+  //      instruction->predValue, instruction->needlvp);
     //  instruction->sap_v = cpu->sap.getValue(thisPC.pc(),
     //    instruction->predAddr ,instruction->needsap);
-        std::cout<<"check bypass: diff"
-        <<instruction->diffSSN
-        <<" need:"<<instruction->needpdt<<"  ";instruction->dump();
 
     }
 

@@ -101,4 +101,3 @@ class LTAGE(BranchPredictor):
     minHist = Param.Unsigned(4, "Minimum history size of LTAGE")
     maxHist = Param.Unsigned(640, "Maximum history size of LTAGE")
     minTagWidth = Param.Unsigned(7, "Minimum tag size in tag tables")
-

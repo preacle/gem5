@@ -402,13 +402,13 @@ class BaseO3DynInst : public BaseDynInst<Impl>
     {
         this->saved_value = val;
         if (this->isReexecuting()){
-            std::cout<<"setIntRegOperand: re-val:"<<val<<" "
+//            std::cout<<"setIntRegOperand: re-val:"<<val<<" "
   //<<"isNosq:"<<this->isNoSQ()<<"isLVP"<<this->isLVP()<<" "
-  ;this->dump();
+//  ;this->dump();
         }else{
-          std::cout<<"setIntRegOperand: val:"<<val<<" "
+  //        std::cout<<"setIntRegOperand: val:"<<val<<" "
        //<<"isNosq:"<<this->isNoSQ()<<"isLVP"<<this->isLVP()<<" "
-       ;this->dump();
+    //   ;this->dump();
         }
         this->cpu->setIntReg(this->_destRegIdx[idx], val);
         BaseDynInst<Impl>::setIntRegOperand(si, idx, val);

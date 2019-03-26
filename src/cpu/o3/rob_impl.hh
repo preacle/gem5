@@ -523,7 +523,8 @@ void
 ROB<Impl>::doReexcute(ThreadID tid)
 {
     InstIt head_it = instList[tid].begin();
-    int MRN = 10;
+    int MRN = 4;
+    bool needSquash = false;
     int cntReexcuteNum = 0;
     if (instList[tid].empty())
       return;
@@ -532,12 +533,18 @@ ROB<Impl>::doReexcute(ThreadID tid)
        //std::cout<<"reex:"<<inst->seqNum<<" ";inst->dump();
        head_it++;
 
+       if (cntReexcuteNum == MRN){
+         return;
+       }
+
        if (!inst->readyToCommit() || inst->isSquashDueToReexecute()
        ||inst->isSquashed()){
          return;
        }
 
        if (inst->isStore()){
+         if (needSquash)
+          return;
           if (inst->readPredicate()&&inst->effSize!=0){
             cpu->SVWFilter.insert(inst);
           }
@@ -564,22 +571,37 @@ ROB<Impl>::doReexcute(ThreadID tid)
        }
 
 //每次最多一条指令访存
+//最多四条指令访问SVW
        if (inst->isLoad() && !inst->isReexecuted()){
          if (inst->isReexecuting()) return;
          bool vio = cpu->SVWFilter.violation(inst);
-         if (vio){
-           cpu->iew.squashDueToMemOrder(inst,inst->threadNumber);
-          // inst->setReexecuted();
-           inst->setCanCommit();
-           cpu->iew.activityThisCycle();
-           inst->setSquashed();
-           return ;
-  }else if (inst->isLVP() ||inst->isNeedReexecute()){
-           std::cout<<"reload:"
-           <<double(cpu->re_load_nums)/double(cpu->load_nums)
-           <<"lvp :"<<double(cpu->num_lvp)/double(cpu->load_nums)
-           <<"nosq:"<<double(cpu->num_nosq)/double(cpu->load_nums)
-           <<"sap :"<<double(cpu->num_sap)/double(cpu->load_nums)<<std::endl;
+         if (!vio&&inst->isNoSQ()&&
+            inst->isBypassed()&&!inst->isNeedReexecute()){
+           if (inst->numDestRegs() == 1 && inst->bypassSSN != 0){
+             uint64_t diffSSN = inst->gSSN - inst->bypassSSN;
+             cpu->loadPdt.insertLoad(inst->pcState().pc(),
+             inst->bypassPC,diffSSN);
+           }
+         }
+         if (vio&&false){
+             cpu->iew.squashDueToMemOrder(inst,inst->threadNumber);
+            // inst->setReexecuted();
+             inst->setCanCommit();
+             cpu->iew.activityThisCycle();
+             needSquash = true;
+             cntReexcuteNum++;
+             continue ;
+
+  }else if (inst->isLVP() ||inst->isNeedReexecute()||vio){
+          if (needSquash){
+            cntReexcuteNum++;
+            continue;
+          }
+          // std::cout<<"reload:"
+          // <<double(cpu->re_load_nums)/double(cpu->load_nums)
+        //   <<"lvp :"<<double(cpu->num_lvp)/double(cpu->load_nums)
+        //   <<"nosq:"<<double(cpu->num_nosq)/double(cpu->load_nums)
+        //   <<"sap :"<<double(cpu->num_sap)/double(cpu->load_nums)<<std::endl;
            //std::cout << inst->seqNum << " find in SVW: ea"<<inst->effAddr;
            //inst->dump();
            if (cpu->iew.ldstQueue.thread[tid].stores != 0){
@@ -589,7 +611,6 @@ ROB<Impl>::doReexcute(ThreadID tid)
                return ;
            }
            doReexcuteInst(tid,inst);
-           cntReexcuteNum++;
           // std::cout<<"NOSQ:"<<inst->isNoSQ()<
           //<" LVP:"<<inst->isLVP()<<" SAP:"
           //<<inst->isSAP()<<" "<<cntReexcuteNum<<std::endl;
@@ -604,10 +625,6 @@ ROB<Impl>::doReexcute(ThreadID tid)
        inst->setReexecuted();
 //       inst->setReexecuted();
        //std::cout<<cntReexcuteNum<<std::endl;
-       if (cntReexcuteNum == MRN){
-         break;
-       }
-
     }
 }
 

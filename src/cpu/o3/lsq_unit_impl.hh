@@ -684,7 +684,6 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
         //如果相等就不squash
         if (inst->isBypassed()&&!inst->readPredicate()){
           inst->setReexecuted();
-          std::cout<<"squashDueToMemOrder::executeLoad"<<std::endl;
           iewStage->squashDueToMemOrder(inst,inst->threadNumber);
         }
 
@@ -693,7 +692,6 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
     } else {
 
         cpu->load_nums++;
-        std::cout<<"dump load1:";inst->dump();
         //assert(inst->_effAddr);
         int load_idx = inst->lqIdx;
         incrLdIdx(load_idx);
@@ -719,27 +717,27 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
 //如果地址不等,执行Load
 
           //现在考虑大小不同问题
-          std::cout<<"cachebpinfo:"<<inst->seqNum;inst->dump();
-          std::cout<<"cachebpinfo:"<<inst->bpeffAddr;inst->dump();
-          std::cout<<"cachebpinfo:"<<inst->effAddr;inst->dump();
-          std::cout<<"cachebpinfo:"<<inst->effSize;inst->dump();
-          std::cout<<"cachebpinfo:"<<inst->bpeffSize;inst->dump();
+//          std::cout<<"cachebpinfo:"<<inst->seqNum;inst->dump();
+//          std::cout<<"cachebpinfo:"<<inst->bpeffAddr;inst->dump();
+//          std::cout<<"cachebpinfo:"<<inst->effAddr;inst->dump();
+//          std::cout<<"cachebpinfo:"<<inst->effSize;inst->dump();
+//          std::cout<<"cachebpinfo:"<<inst->bpeffSize;inst->dump();
 
             if (inst->bpeffAddr <= inst->effAddr && inst->effAddr+inst->effSize
               <= inst->bpeffAddr+inst->bpeffSize && inst->bpeffSize != 0){
-              std::cout<<"111:"<<inst->predValue;;inst->dump();
+  //            std::cout<<"111:"<<inst->predValue;;inst->dump();
               uint8_t* x = new uint8_t(sizeof(uint64_t));
-              std::cout<<"222";inst->dump();
+  //            std::cout<<"222";inst->dump();
               for (int i=0;i<sizeof(uint64_t);i++){
                 x[i] = 0;
               }
               memset(x+inst->effAddr - inst->bpeffAddr,0xff,inst->effSize);
-              std::cout<<"333"<<std::endl;
+  //            std::cout<<"333"<<std::endl;
               inst->predValue &= *(uint64_t*)(x);
-              std::cout<<"444"<<std::endl;
+  //            std::cout<<"444"<<std::endl;
               inst->predValue =
                 inst->predValue<<(inst->effAddr - inst->bpeffAddr);
-              std::cout<<"555:"<<inst->predValue;inst->dump();
+  //            std::cout<<"555:"<<inst->predValue;inst->dump();
               //memcpy(x,src,inst->effSize);
             //  inst->predValue = *((uint64_t*)(src));
               if (inst->isFloating()){
@@ -769,8 +767,8 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
         }else{
           inst->SSN  = cpu->getRetireSSN();
         }
-        //if (checkLoads)
-        //    return checkViolations(load_idx, inst);
+        if (checkLoads)
+            return checkViolations(load_idx, inst);
     }
     return load_fault;
 }
@@ -1271,6 +1269,7 @@ LSQUnit<Impl>::writeback(DynInstPtr &inst, PacketPtr pkt)
     if(inst->isReexecuting()) {
         inst->completeAcc(pkt);
         if (inst->isSquashDueToReexecute()){
+        /*
           if (inst->isNoSQ())
             std::cout<<"squashDueToMemOrder::ReexecuteLoad WB::NoSQ"
               <<std::endl;
@@ -1283,6 +1282,7 @@ LSQUnit<Impl>::writeback(DynInstPtr &inst, PacketPtr pkt)
           else
             std::cout<<"squashDueToMemOrder::ReexecuteLoad WB::SMP"
               <<std::endl;
+            */
           iewStage->squashDueToMemOrder(inst,inst->threadNumber);
           return;
         }

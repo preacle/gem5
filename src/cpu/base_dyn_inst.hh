@@ -265,7 +265,6 @@ class BaseDynInst : public ExecContext, public RefCounted
 
    bool setAddrSize(uint64_t sz) override
    {
-     std::cout<<"setAddrSize"<<sz<<std::endl;
        effSize = sz;
        return true;
    }

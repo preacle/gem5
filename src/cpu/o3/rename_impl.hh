@@ -919,9 +919,9 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
             bypassLoad->setNoSQ();
             inst->setNoSQ();
             inst->setNeedBypass();
-            std::cout<<"Nosq:";inst->dump();
-            for (auto i:SRQ)
-              i->dump();
+            //std::cout<<"Nosq:";inst->dump();
+            //for (auto i:SRQ)
+          //    i->dump();
             cpu->num_nosq++;
         }
         else if (inst->sap_v &&

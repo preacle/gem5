@@ -484,9 +484,11 @@ template<class Impl>
 void
 DefaultIEW<Impl>::squashDueToBranch(DynInstPtr &inst, ThreadID tid)
 {
+    inst->setSquashDueToReexecute();
     DPRINTF(IEW, "[tid:%i]: Squashing from a specific instruction, PC: %s "
             "[sn:%i].\n", tid, inst->pcState(), inst->seqNum);
-
+  //  std::cout<<"squashDueToBranch:all:"<<inst->pcState().branching();
+  //  inst->dump();
     if (!toCommit->squash[tid] ||
             inst->seqNum < toCommit->squashedSeqNum[tid]) {
         toCommit->squash[tid] = true;
@@ -510,6 +512,7 @@ template<class Impl>
 void
 DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
 {
+  //  std::cout<<"squashDueToMemOrder:all:";inst->dump();
     ++memOrderViolationEvents;
     DPRINTF(IEW, "[tid:%i]: Memory violation, squashing violator and younger "
             "insts, PC: %s [sn:%i].\n", tid, inst->pcState(), inst->seqNum);
@@ -521,11 +524,11 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
     // the squash.
 
     //update pdt
-  //  if (inst->numDestRegs() == 1 && inst->bypassSSN != 0){
-//            uint64_t diffSSN = inst->gSSN - inst->bypassSSN;
-  //          cpu->loadPdt.insertLoad(inst->pcState().pc(),
-//            inst->bypassPC,diffSSN);
-//    }
+    if (inst->numDestRegs() == 1 && inst->bypassSSN != 0){
+            uint64_t diffSSN = inst->gSSN - inst->bypassSSN;
+            cpu->loadPdt.insertLoad(inst->pcState().pc(),
+            inst->bypassPC,diffSSN);
+    }
     if (inst->BypassInst){
       inst->BypassInst->clearNeedBypass();
       inst->BypassInst = NULL;
@@ -1283,25 +1286,25 @@ DefaultIEW<Impl>::executeInsts()
                   //&&inst->BypassInst->readPredicate()
                   &&!inst->BypassInst->readyToCommit())
                 {
-                  std::cout<<"NOSQ_bypass1"<<inst->BypassInst->effAddr
-                  <<" "<<inst->BypassInst->effSize
-                  <<" "<<inst->BypassInst->saved_value;inst->dump();
+//                  std::cout<<"NOSQ_bypass1"<<inst->BypassInst->effAddr
+//                  <<" "<<inst->BypassInst->effSize
+//                  <<" "<<inst->BypassInst->saved_value;inst->dump();
                   instQueue.deferMemInst(inst);
                   continue;
                 }else if (inst->BypassInst){
                   inst->bpeffAddr = inst->BypassInst->effAddr;
                   inst->bpeffSize = inst->BypassInst->effSize;
                   inst->predValue =  inst->BypassInst->saved_value;
-                  std::cout<<"NOSQ_bypass"
-                  <<inst->BypassInst->effAddr
-                  <<" "<<inst->BypassInst->effSize
-                  <<" "<<inst->BypassInst->saved_value;inst->dump();
+//                  std::cout<<"NOSQ_bypass"
+//                  <<inst->BypassInst->effAddr
+//                  <<" "<<inst->BypassInst->effSize
+//                  <<" "<<inst->BypassInst->saved_value;inst->dump();
                   if (inst->BypassInst) {
                     inst->BypassInst->clearNeedBypass();
                     inst->BypassInst = NULL;
                   }
                 }
-                std::cout<<"NOSQ_bypass";inst->dump();
+  //              std::cout<<"NOSQ_bypass";inst->dump();
                 fault = ldstQueue.executeLoad(inst);
 
                 if (inst->isTranslationDelayed() &&

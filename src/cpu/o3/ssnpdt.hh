@@ -21,7 +21,6 @@ public:
 //          tag(t),value(val),c(c),v(v){}
 
         bool insert(uint64_t insertTag,uint64_t insertVal,uint64_t insertPC){
-          std::cout<<"ssnpdt: Tag:"<<insertTag<<" Val:"<<insertVal<<std::endl;
             if (v == 1){
                if (tag == insertTag){
                     if (value == insertVal){
