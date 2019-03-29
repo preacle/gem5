@@ -152,9 +152,12 @@ class BaseDynInst : public ExecContext, public RefCounted
 
   public:
     uint64_t hist = 0;
-
+    uint64_t hist_fullbit = 0;
+    uint64_t hist_onebit = 0;
     uint64_t needpdt = 0;
     bool pdt_v = false;
+
+
 
     uint64_t needlvp = 0;
     bool lvp_v = false;

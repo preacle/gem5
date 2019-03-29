@@ -580,7 +580,7 @@ ROB<Impl>::doReexcute(ThreadID tid)
            if (inst->numDestRegs() == 1 && inst->bypassSSN != 0){
              uint64_t diffSSN = inst->gSSN - inst->bypassSSN;
              cpu->loadPdt.insertLoad(inst->pcState().pc(),
-             inst->bypassPC,diffSSN);
+             inst->bypassPC,diffSSN,inst->hist_fullbit);
            }
          }
          if (vio&&false){

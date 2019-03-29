@@ -2,7 +2,8 @@
 #define __CPU_O3_SSNPDT_HH__
 #include <iostream>
 #include <vector>
-#define PREDSIZE (1024*1024)
+#define PREDSIZE (512)
+#define LOGPREDSIZE (9)
 using namespace std;
 
 
@@ -58,7 +59,8 @@ public:
 };
 
 class SSNPDT{
-    vector<predItem* > table;
+    vector<predItem* > table0;
+    vector<predItem* > table1;
     // 0 有效位
     // 1 pc tag
     // 2 ssn
@@ -66,39 +68,73 @@ class SSNPDT{
 public:
     SSNPDT(){
       int sz = PREDSIZE;
-      table = vector<predItem*>(sz);
-      for (int i=0;i!=sz;i++) table[i] = new predItem();
+      table0 = vector<predItem*>(sz);
+      table1 = vector<predItem*>(sz);
+      for (int i=0;i!=sz;i++) table0[i] = new predItem();
+      for (int i=0;i!=sz;i++) table1[i] = new predItem();
     }
-    bool insertLoad(uint64_t pc, uint64_t pc_v, uint64_t val){
-        uint64_t idx = (pc>>1) % PREDSIZE;
-        uint64_t tag = (pc>>1) / PREDSIZE;
-        table[idx]->insert(tag,val,pc_v);
+    bool insertLoad(uint64_t pc, uint64_t pc_v, uint64_t val,uint64_t history){
+        uint64_t idx0 = (pc>>1) % PREDSIZE;
+        uint64_t tag0 = (pc>>1) / PREDSIZE;
+        table0[idx0]->insert(tag0,val,pc_v);
+
+        uint64_t idx1 = ((pc>>1)^(pc>>9)^history)% PREDSIZE;
+        uint64_t tag1 = ((pc>>1)^(pc>>9)^history)/ PREDSIZE;
+        table1[idx1]->insert(tag1,val,pc_v);
+
         return true;
     }
-    bool getSSN(uint64_t pc,uint64_t gssn, uint64_t& val, uint64_t& c){
+    bool getSSN(
+      uint64_t pc,
+      uint64_t gssn,
+      uint64_t history,
+      uint64_t& val,
+      uint64_t& c){
 
-        uint64_t idx = (pc>>1) % PREDSIZE;
-        uint64_t tag = (pc>>1) / PREDSIZE;
-        if (table[idx]->tag != tag){
+        uint64_t idx0 = (pc>>1) % PREDSIZE;
+        uint64_t tag0 = (pc>>1) / PREDSIZE;
+
+        uint64_t trueIdx;
+        uint64_t pc_tag;
+        uint64_t pc_idx;
+
+        uint64_t idx1 = ((pc>>1)^(pc>>9)^history)% PREDSIZE;
+        uint64_t tag1 = ((pc>>1)^(pc>>9)^history)/ PREDSIZE;
+        if (table0[idx0]->tag != tag0 && table1[idx1]->tag != tag1){
             return false;
         }
-        if (c == 63){
-          return table[idx]->v;
-        }
-        uint64_t trueIdx = table[idx]->pc;
-        uint64_t pc_tag = trueIdx/PREDSIZE;
-        uint64_t pc_idx = trueIdx%PREDSIZE;
-        if (table[idx]->pc_c > table[idx]->c
-          && pclink[pc_idx][0] && pclink[pc_idx][1] == pc_tag){
-          val = gssn - pclink[pc_idx][3];
-          if (val <= 30){
-            c = table[idx]->pc_c;
-            return true;
+        if (table1[idx1]->tag == tag1){
+          trueIdx = table1[idx1]->pc;
+          pc_tag = trueIdx/PREDSIZE;
+          pc_idx = trueIdx%PREDSIZE;
+          if (table1[idx1]->pc_c > table1[idx1]->c
+            && pclink[pc_idx][0] && pclink[pc_idx][1] == pc_tag){
+            val = gssn - pclink[pc_idx][3];
+            if (val <= 30){
+              c = table1[idx1]->pc_c;
+              return true;
+            }
           }
+          val = table1[idx1]->value;
+          c = table1[idx1]->c;
+          return table1[idx1]->v;
         }
-        val = table[idx]->value;
-        c = table[idx]->c;
-        return table[idx]->v;
+        else{
+          trueIdx = table0[idx0]->pc;
+          pc_tag = trueIdx/PREDSIZE;
+          pc_idx = trueIdx%PREDSIZE;
+          if (table0[idx0]->pc_c > table0[idx0]->c
+            && pclink[pc_idx][0] && pclink[pc_idx][1] == pc_tag){
+            val = gssn - pclink[pc_idx][3];
+            if (val <= 30){
+              c = table0[idx0]->pc_c;
+              return true;
+            }
+          }
+          val = table0[idx0]->value;
+          c = table0[idx0]->c;
+          return table0[idx0]->v;
+        }
     }
     void insertStore(uint64_t trueIdx,uint64_t ssn){
       uint64_t idx = trueIdx%PREDSIZE;

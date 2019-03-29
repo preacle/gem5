@@ -135,6 +135,10 @@ class FullO3CPU : public BaseO3CPU
 
     int load_nums = 0;
     int re_load_nums = 0;
+
+    //SSQ history
+    uint64_t hist_fullbit = 0;
+    uint64_t hist_onebit = 0;
   public:
     enum Status {
         Running,

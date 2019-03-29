@@ -1144,20 +1144,20 @@ DefaultFetch<Impl>::buildInst(ThreadID tid, StaticInstPtr staticInst,
 
     //获取指令读取/写回数据的长度
 
-    if (instruction->isLoad())
-      instruction->hist = cpu->ght.getHist()%1024;
-    if (instruction->isLoad() && !instruction->isNonSpeculative()
-      && instruction->numDestRegs() < 2
-      &&!instruction->isSquashed()&&!instruction->isMemBarrier()
-      &&!instruction->isWriteBarrier()){
-      instruction->pdt_v = cpu->loadPdt.getSSN(thisPC.pc(),instruction->gSSN,
-       instruction->diffSSN, instruction->needpdt);
+//    if (instruction->isLoad())
+//      instruction->hist = cpu->ght.getHist()%1024;
+//    if (instruction->isLoad() && !instruction->isNonSpeculative()
+//      && instruction->numDestRegs() < 2
+//      &&!instruction->isSquashed()&&!instruction->isMemBarrier()
+//      &&!instruction->isWriteBarrier()){
+//      instruction->pdt_v = cpu->loadPdt.getSSN(thisPC.pc(),instruction->gSSN,
+//       instruction->diffSSN, instruction->needpdt);
   //    instruction->lvp_v = cpu->lvp.getValue(thisPC.pc(),
   //      instruction->predValue, instruction->needlvp);
     //  instruction->sap_v = cpu->sap.getValue(thisPC.pc(),
     //    instruction->predAddr ,instruction->needsap);
 
-    }
+//    }
 
 
 

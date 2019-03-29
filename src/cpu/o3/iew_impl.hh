@@ -487,8 +487,7 @@ DefaultIEW<Impl>::squashDueToBranch(DynInstPtr &inst, ThreadID tid)
     inst->setSquashDueToReexecute();
     DPRINTF(IEW, "[tid:%i]: Squashing from a specific instruction, PC: %s "
             "[sn:%i].\n", tid, inst->pcState(), inst->seqNum);
-  //  std::cout<<"squashDueToBranch:all:"<<inst->pcState().branching();
-  //  inst->dump();
+
     if (!toCommit->squash[tid] ||
             inst->seqNum < toCommit->squashedSeqNum[tid]) {
         toCommit->squash[tid] = true;
@@ -527,7 +526,7 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
     if (inst->numDestRegs() == 1 && inst->bypassSSN != 0){
             uint64_t diffSSN = inst->gSSN - inst->bypassSSN;
             cpu->loadPdt.insertLoad(inst->pcState().pc(),
-            inst->bypassPC,diffSSN);
+            inst->bypassPC,diffSSN,inst->hist_fullbit);
     }
     if (inst->BypassInst){
       inst->BypassInst->clearNeedBypass();

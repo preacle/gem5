@@ -792,7 +792,7 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
         }
 
         if (inst->isStore()) {
-            if (SRQ.size() == 128 && SRQ.back()->isNeedBypass()){
+            if (SRQ.size() == 64 && SRQ.back()->isNeedBypass()){
               DPRINTF(Rename, "[tid:%u]: Cannot rename due to no free SRQ\n");
               break;
             }
@@ -883,13 +883,36 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
 
             serializeAfter(insts_to_rename, tid);
         }
-
         if (inst->isLoad()) {
+                //maybe squash ;just fix hist_bit here for temporary
+                if (SRQ.size()!= 0){
+                  cpu->hist_fullbit = SRQ[0]->hist_fullbit;
+                  inst->hist_fullbit = cpu->hist_fullbit;
+                }
                 loadsInProgress[tid]++;
         }
+        if (inst->isLoad() && !inst->isNonSpeculative()
+          && inst->numDestRegs() < 2
+          &&!inst->isSquashed()&&!inst->isMemBarrier()
+          &&!inst->isWriteBarrier()){
+          inst->pdt_v = cpu->loadPdt.getSSN(inst->pcState().pc(),inst->gSSN,
+           inst->hist_fullbit,inst->diffSSN, inst->needpdt);
+      //    instruction->lvp_v = cpu->lvp.getValue(thisPC.pc(),
+      //      instruction->predValue, instruction->needlvp);
+        //  instruction->sap_v = cpu->sap.getValue(thisPC.pc(),
+        //    instruction->predAddr ,instruction->needsap);
+
+        }
         if (inst->isStore()) {
+                uint64_t hist_fullbit = cpu->hist_fullbit;
+                hist_fullbit ^= inst->pcState().pc() >> 1;
+                if (SRQ.size() >= 33){
+                  hist_fullbit ^= SRQ[32]->pcState().pc() >> 1;
+                }
+                inst->hist_fullbit = hist_fullbit;
+                cpu->hist_fullbit = hist_fullbit;
                 SRQ.push_front(inst);
-                if (SRQ.size() > 128)
+                if (SRQ.size() > 64)
                   SRQ.pop_back();
                 //std::cout<<SRQ.size()<<std::endl;
                 storesInProgress[tid]++;

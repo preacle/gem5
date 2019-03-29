@@ -625,7 +625,7 @@ LSQUnit<Impl>::ReexecuteLoad(DynInstPtr &inst)
         if (!inst->readPredicate()){
             inst->forwardOldRegs();
             inst->setReexecuted();
-            std::cout<<"squashDueToMemOrder::ReexecuteLoad LVP"<<std::endl;
+          //std::cout<<"squashDueToMemOrder::ReexecuteLoad LVP"<<std::endl;
             iewStage->squashDueToMemOrder(inst,inst->threadNumber);
         }
       }

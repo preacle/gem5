@@ -54,11 +54,7 @@ Decoder::moreBytes(PCState &pc, Addr fetchPC, MachInst inst)
 {
     DPRINTF(Decode, "Requesting bytes 0x%08x from address %#x\n", inst,
             fetchPC);
-    if (compressed(emi)){
-      pc.compressed(true);
-    }else{
-      pc.compressed(false);
-    }
+
     bool aligned = pc.pc() % sizeof(MachInst) == 0;
     if (aligned) {
         emi = inst;
@@ -73,12 +69,19 @@ Decoder::moreBytes(PCState &pc, Addr fetchPC, MachInst inst)
             mid = false;
             more = false;
             instDone = true;
+
+            pc.compressed(false);
         } else {
             emi = (inst & UpperBitMask) >> sizeof(MachInst)*4;
             mid = !compressed(emi);
             more = true;
             instDone = compressed(emi);
         }
+    }
+    if (compressed(emi)){
+      pc.compressed(true);
+    }else{
+      pc.compressed(false);
     }
 }
 
