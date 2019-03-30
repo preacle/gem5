@@ -912,6 +912,11 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
 
         }
         if (inst->isStore()) {
+                if (SRQ.size() != 0){
+                  cpu->hist_fullbit = SRQ[0]->hist_fullbit;
+                }else{
+                  cpu->hist_fullbit = 0;
+                }
                 uint64_t hist_fullbit = cpu->hist_fullbit;
                 hist_fullbit ^= inst->pcState().pc() >> 1;
                 if (SRQ.size() >= 64){
