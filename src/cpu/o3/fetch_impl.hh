@@ -565,7 +565,6 @@ DefaultFetch<Impl>::lookupAndUpdateNextPC(
     ThreadID tid = inst->threadNumber;
     predict_taken = branchPred->predict(inst->staticInst, inst->seqNum,
                                         nextPC, tid);
-    cpu->ght.insert(inst->seqNum,predict_taken);
     if (predict_taken) {
         DPRINTF(Fetch, "[tid:%i]: [sn:%i]:  Branch predicted to be taken to %s.\n",
                 tid, inst->seqNum, nextPC);

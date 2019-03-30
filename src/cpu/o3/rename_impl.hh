@@ -792,7 +792,7 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
         }
 
         if (inst->isStore()) {
-            if (SRQ.size() == 64 && SRQ.back()->isNeedBypass()){
+            if (SRQ.size() == 128 && SRQ.back()->isNeedBypass()){
               DPRINTF(Rename, "[tid:%u]: Cannot rename due to no free SRQ\n");
               break;
             }
@@ -906,13 +906,13 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
         if (inst->isStore()) {
                 uint64_t hist_fullbit = cpu->hist_fullbit;
                 hist_fullbit ^= inst->pcState().pc() >> 1;
-                if (SRQ.size() >= 33){
-                  hist_fullbit ^= SRQ[32]->pcState().pc() >> 1;
+                if (SRQ.size() >= 64){
+                  hist_fullbit ^= SRQ[63]->pcState().pc() >> 1;
                 }
                 inst->hist_fullbit = hist_fullbit;
                 cpu->hist_fullbit = hist_fullbit;
                 SRQ.push_front(inst);
-                if (SRQ.size() > 64)
+                if (SRQ.size() > 128)
                   SRQ.pop_back();
                 //std::cout<<SRQ.size()<<std::endl;
                 storesInProgress[tid]++;

@@ -4,7 +4,7 @@ m5.util.addToPath('../common')
 
 binary_dir = '/home/chengjian/CPU2006/'
 data_dir = '/home/chengjian/CPU2006/'
-output_dir = '/home/chengjian/CPU2006/output/'
+output_dir = '/home/chengjian/CPU2006/'
 #====================
 #400.perlbench
 perlbench = Process()
@@ -54,8 +54,8 @@ gobmk.errout = output_dir+'445.gobmk/capture.err'
 hmmer=Process()
 hmmer.executable =  binary_dir+'456.hmmer/exe/hmmer_base.riscv'
 data=data_dir+'456.hmmer/data/test/input/bombesin.hmm'
-hmmer.cmd = [hmmer.executable]+['--fixed', '0', '--mean', \
-'325', '--num', '5000', '--sd', '200', '--seed', '0', data]
+hmmer.cmd = [hmmer.executable]+['--fixed', '0', '--mean',\
+ '325', '--num', '5000', '--sd', '200', '--seed', '0', data]
 hmmer.output = output_dir+'456.hmmer/bombesin.out'
 hmmer.errout = output_dir+'456.hmmer/bombesin.err'
 
@@ -97,7 +97,7 @@ astar=Process()
 astar.executable =  binary_dir+'473.astar/exe/astar_base.riscv'
 astar.cmd = [astar.executable]+['lake.cfg']
 astar.output = output_dir+'473.astar/lake.out'
-astar.errout = output_dir+'473.astar/lake.err'
+#astar.errout = output_dir+'473.astar/lake.err'
 
 #====================
 #483.xalancbmk
@@ -113,3 +113,4 @@ specrand_i.executable = binary_dir+'998.specrand/exe/specrand_base.riscv'
 specrand_i.cmd = [specrand_i.executable] + ['324342','24239']
 specrand_i.output = output_dir+'998.specrand/rand.24239.out'
 specrand_i.errout = output_dir+'998.specrand/rand.24239.err'
+
