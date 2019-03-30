@@ -2,9 +2,9 @@ import m5
 from m5.objects import *
 m5.util.addToPath('../common')
 
-binary_dir = '/home/chengjian/CPU2006/'
-data_dir = '/home/chengjian/CPU2006/'
-output_dir = '/home/chengjian/CPU2006/'
+binary_dir = '/home/ligangyi/thesis/CPU2006/'
+data_dir = '/home/ligangyi/thesis/CPU2006/'
+output_dir = '/home/ligangyi/thesis/CPU2006/'
 #====================
 #400.perlbench
 perlbench = Process()
@@ -113,4 +113,3 @@ specrand_i.executable = binary_dir+'998.specrand/exe/specrand_base.riscv'
 specrand_i.cmd = [specrand_i.executable] + ['324342','24239']
 specrand_i.output = output_dir+'998.specrand/rand.24239.out'
 specrand_i.errout = output_dir+'998.specrand/rand.24239.err'
-
