@@ -6,7 +6,7 @@
 #define LOGPREDSIZE (9)
 using namespace std;
 
-
+#define maxBypassDist 64
 class predItem{
 public:
     uint64_t tag;   // tag
@@ -109,8 +109,8 @@ public:
           pc_idx = trueIdx%PREDSIZE;
           if (table1[idx1]->pc_c > table1[idx1]->c
             && pclink[pc_idx][0] && pclink[pc_idx][1] == pc_tag){
-            val = gssn - pclink[pc_idx][3];
-            if (val <= 30){
+            val = gssn - pclink[pc_idx][2];
+            if (val < maxBypassDist){
               c = table1[idx1]->pc_c;
               return true;
             }
@@ -125,8 +125,8 @@ public:
           pc_idx = trueIdx%PREDSIZE;
           if (table0[idx0]->pc_c > table0[idx0]->c
             && pclink[pc_idx][0] && pclink[pc_idx][1] == pc_tag){
-            val = gssn - pclink[pc_idx][3];
-            if (val <= 30){
+            val = gssn - pclink[pc_idx][2];
+            if (val < maxBypassDist){
               c = table0[idx0]->pc_c;
               return true;
             }

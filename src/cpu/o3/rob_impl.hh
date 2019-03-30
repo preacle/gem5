@@ -543,8 +543,8 @@ ROB<Impl>::doReexcute(ThreadID tid)
        }
 
        if (inst->isStore()){
-         if (needSquash)
-          return;
+         //if (needSquash)
+         // return;
           if (inst->readPredicate()&&inst->effSize!=0){
             cpu->SVWFilter.insert(inst);
           }
