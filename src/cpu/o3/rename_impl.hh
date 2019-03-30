@@ -438,6 +438,14 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
 
       if (dest->isInteger()){
         //IntReg value = dest->getIntRegMem();
+        if (!dest->isUint){
+          bool flag = (1<<(4*dest->effSize-1))&value;
+          if (flag){
+            for (int i=dest->effSize;i<sizeof(uint64_t);i++){
+              value |= ((0xff)<<(i*4));
+            }
+          }
+        }
         dest->setIntRegOperand(dest->staticInst.get(), 0, value);
       }else{
         //FloatReg value = dest->getFloatRegMem();

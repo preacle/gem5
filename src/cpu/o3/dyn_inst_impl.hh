@@ -126,7 +126,15 @@ BaseO3DynInst<Impl>::initVars()
 
 if (this->isLoad() || this->isStore()){
   string name = this->staticInst->getName();
-
+  if (name.find("bu")!= std::string::npos){
+    this->isUint = true;
+  }
+  if (name.find("hu")!= std::string::npos){
+    this->isUint = true;
+  }
+  if (name.find("wu")!= std::string::npos){
+    this->isUint = true;
+  }
   if (name.find("ld") != std::string::npos){
     this->effSize = sizeof(uint64_t);
     return ;

@@ -487,7 +487,11 @@ DefaultIEW<Impl>::squashDueToBranch(DynInstPtr &inst, ThreadID tid)
     inst->setSquashDueToReexecute();
     DPRINTF(IEW, "[tid:%i]: Squashing from a specific instruction, PC: %s "
             "[sn:%i].\n", tid, inst->pcState(), inst->seqNum);
-
+  //  std::cout<<std::endl;
+  //  std::cout<<inst->pcState();
+  //  std::cout<<":squashDueToBranch";
+  //  std::cout<<inst->pcState().branching();
+  //  inst->dump();
     if (!toCommit->squash[tid] ||
             inst->seqNum < toCommit->squashedSeqNum[tid]) {
         toCommit->squash[tid] = true;

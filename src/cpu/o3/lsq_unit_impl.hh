@@ -738,17 +738,33 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
               }
               memset(x+inst->effAddr - inst->bpeffAddr,0xff,inst->effSize);
             //  std::cout<<"333"<<std::endl;
-              inst->predValue &= *(uint64_t*)(x);
+            //  inst->predValue &= *(uint64_t*)(x);
             //  std::cout<<"444"<<std::endl;
-              inst->predValue =
-                inst->predValue<<(inst->effAddr - inst->bpeffAddr);
+            //  inst->predValue =
+            //    inst->predValue<<(inst->effAddr - inst->bpeffAddr);
             //  std::cout<<"555:"<<inst->predValue;inst->dump();
               //memcpy(x,src,inst->effSize);
             //  inst->predValue = *((uint64_t*)(src));
               if (inst->isFloating()){
+                inst->predValue &= *(uint64_t*)(x);
+              //  std::cout<<"444"<<std::endl;
+                inst->predValue =
+                  inst->predValue<<(inst->effAddr - inst->bpeffAddr);
                 inst->setFloatRegOperand(
                     inst->staticInst.get(), 0, inst->predValue);
               }else{
+                  inst->predValue &= *(uint64_t*)(x);
+                //  std::cout<<"444"<<std::endl;
+                  inst->predValue =
+                    inst->predValue<<(inst->effAddr - inst->bpeffAddr);
+                if (!inst->isUint){
+                  bool flag = (1<<(4*inst->effSize-1))&inst->predValue;
+                  if (flag){
+                    for (int i=inst->effSize;i<sizeof(uint64_t);i++){
+                      inst->predValue |= ((0xff)<<(i*4));
+                    }
+                  }
+                }
                 inst->setIntRegOperand(
                   inst->staticInst.get(), 0, inst->predValue);
               }
