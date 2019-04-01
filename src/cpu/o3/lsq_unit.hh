@@ -848,7 +848,10 @@ LSQUnit<Impl>::read(const RequestPtr &req,
         }
 
         ++lsqCacheBlocked;
-
+        if (load_inst->isReexecuting()){
+          load_inst->blockInReex = true;
+          return NoFault;
+        }
         iewStage->blockMemInst(load_inst);
 
         // No fault occurred, even though the interface is blocked.

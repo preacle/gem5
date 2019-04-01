@@ -790,11 +790,15 @@ InstructionQueue<Impl>::scheduleReadyInsts()
 
     DynInstPtr mem_inst;
     while (mem_inst = getDeferredMemInstToExecute()) {
+      DPRINTF(IQ, "IQ: getDeferredMemInstToExecute load PC %s, [sn:%lli].\n",
+              mem_inst->pcState(), mem_inst->seqNum);
         addReadyMemInst(mem_inst);
     }
 
     // See if any cache blocked instructions are able to be executed
     while (mem_inst = getBlockedMemInstToExecute()) {
+      DPRINTF(IQ, "IQ: getBlockedMemInstToExecute load PC %s, [sn:%lli].\n",
+              mem_inst->pcState(), mem_inst->seqNum);
         addReadyMemInst(mem_inst);
     }
 
@@ -1139,7 +1143,9 @@ InstructionQueue<Impl>::completeMemInst(DynInstPtr &completed_inst)
 template <class Impl>
 void
 InstructionQueue<Impl>::deferMemInst(DynInstPtr &deferred_inst)
-{
+{  DPRINTF(IQ, "Inst_queue: Delayed translation, deferring "
+    "load PC %s, [sn:%lli].\n",
+    deferred_inst->pcState(), deferred_inst->seqNum);
     deferredMemInsts.push_back(deferred_inst);
 }
 
@@ -1170,6 +1176,15 @@ InstructionQueue<Impl>::getDeferredMemInstToExecute()
 {
     for (ListIt it = deferredMemInsts.begin(); it != deferredMemInsts.end();
          ++it) {
+           //delay Bypass SSN for llsc
+        if ((*it)->isLoadLinked){
+          if ((*it)->SSN <= cpu->retireSSN){
+            DynInstPtr mem_inst = *it;
+            deferredMemInsts.erase(it);
+            return mem_inst;
+          }
+            continue;
+        }
         if (!(*it)->translationCompleted()){
           if ((*it)->BypassInst
           &&(!(*it)->BypassInst->readPredicate()

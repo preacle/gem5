@@ -515,7 +515,13 @@ template<class Impl>
 void
 DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
 {
-  //  std::cout<<"squashDueToMemOrder:all:";inst->dump();
+//    std::cout<<"squashDueToMemOrder:all: diffSSN:"
+//    <<inst->gSSN - inst->bypassSSN
+//    <<" preddiffSSN:"
+//    <<inst->diffSSN
+//    <<" bypassPC:"
+//    <<inst->bypassPC;
+//    inst->dump();
     ++memOrderViolationEvents;
     DPRINTF(IEW, "[tid:%i]: Memory violation, squashing violator and younger "
             "insts, PC: %s [sn:%i].\n", tid, inst->pcState(), inst->seqNum);
@@ -527,11 +533,11 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
     // the squash.
 
     //update pdt
-    if (inst->numDestRegs() == 1 && inst->bypassSSN != 0){
-            uint64_t diffSSN = inst->gSSN - inst->bypassSSN;
-            cpu->loadPdt.insertLoad(inst->pcState().pc(),
-            inst->bypassPC,diffSSN,inst->hist_fullbit);
-    }
+//    if (inst->numDestRegs() == 1 && inst->bypassSSN != 0){
+//            uint64_t diffSSN = inst->gSSN - inst->bypassSSN;
+//            cpu->loadPdt.insertLoad(inst->pcState().pc(),
+//            inst->bypassPC,diffSSN,inst->hist_fullbit);
+//    }
     if (inst->BypassInst){
       inst->BypassInst->clearNeedBypass();
       inst->BypassInst = NULL;
@@ -1284,11 +1290,17 @@ DefaultIEW<Impl>::executeInsts()
             if (inst->isLoad()) {
                 // Loads will mark themselves as executed, and their writeback
                 // event adds the instruction to the queue to commit
-
+                if (inst->isLoadLinked&&inst->SSN > cpu->retireSSN){
+                  instQueue.deferMemInst(inst);
+                  continue;
+                }
                 if (inst->BypassInst
                   //&&inst->BypassInst->readPredicate()
                   &&!inst->BypassInst->readyToCommit())
                 {
+                  DPRINTF(IEW, "Execute: Delayed translation, deferring "
+                          "load  PC %s, [sn:%lli].\n",
+                          inst->pcState(), inst->seqNum);
 //                  std::cout<<"NOSQ_bypass1"<<inst->BypassInst->effAddr
 //                  <<" "<<inst->BypassInst->effSize
 //                  <<" "<<inst->BypassInst->saved_value;inst->dump();
@@ -1315,7 +1327,8 @@ DefaultIEW<Impl>::executeInsts()
                     // A hw page table walk is currently going on; the
                     // instruction must be deferred.
                     DPRINTF(IEW, "Execute: Delayed translation, deferring "
-                            "load.\n");
+                            "load PC %s, [sn:%lli].\n",
+                            inst->pcState(), inst->seqNum);
                     instQueue.deferMemInst(inst);
                     continue;
                 }

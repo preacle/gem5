@@ -767,6 +767,7 @@ DefaultFetch<Impl>::doSquash(const TheISA::PCState &newPC,
     }else if (squashed_ssn){
       cpu->setSSN(squashed_ssn);
     }
+    cpu->loadPdt.invaildAll(cpu->getSSN());
     pc[tid] = newPC;
     fetchOffset[tid] = 0;
     if (squashInst && squashInst->pcState().instAddr() == newPC.instAddr())
@@ -1128,17 +1129,7 @@ DefaultFetch<Impl>::buildInst(ThreadID tid, StaticInstPtr staticInst,
     // Create a new DynInst from the instruction fetched.
     DynInstPtr instruction =
         new DynInst(staticInst, curMacroop, thisPC, nextPC, seq, ssn, cpu);
-    if (instruction->isStore()){
-             uint64_t trueIdx =
-             ((instruction->pcState().pc() >> 1)<<4)+instruction->microPC()%16;
-          //   if (!instruction->isMacroop() && !instruction->isMicroop()){
-          //     cpu->loadPdt.insertStore(trueIdx,cpu->getSSN());
-        //     }else{
-        //       cpu->loadPdt.invaild(trueIdx);
-        //       std::cout<<"isMacroop::";instruction->dump();
-        //     }
-             cpu->loadPdt.insertStore(trueIdx,cpu->getSSN());
-    }
+
     instruction->gSSN = cpu->getSSN();
 
     //获取指令读取/写回数据的长度

@@ -126,6 +126,9 @@ BaseO3DynInst<Impl>::initVars()
 
 if (this->isLoad() || this->isStore()){
   string name = this->staticInst->getName();
+  if (name.find("lr_w") != std::string::npos){
+    this->isLoadLinked = true;
+  }
   if (name.find("bu")!= std::string::npos){
     this->isUint = true;
   }

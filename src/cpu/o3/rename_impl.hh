@@ -427,8 +427,14 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
                       rename_result.second);
   ++renameRenamedOperands;
 
+  if (dest->isLoadLinked){
+    return;
+  }
+
+  dest->setNeedBypass();
   if (src->readyToCommit()
-    &&src->v_saved_value != 0&&!src->isStoreConditional()){
+    &&src->v_saved_value != 0
+    &&!src->isStoreConditional()){
     if (dest->needpdt >= 63 && src->effSize && src->effSize == dest->effSize){
       auto value = src->saved_value;
       dest->setExecuted();
@@ -439,10 +445,10 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
       if (dest->isInteger()){
         //IntReg value = dest->getIntRegMem();
         if (!dest->isUint){
-          bool flag = (1<<(4*dest->effSize-1))&value;
+          bool flag = (1<<(8*dest->effSize-1))&value;
           if (flag){
             for (int i=dest->effSize;i<sizeof(uint64_t);i++){
-              value |= ((0xff)<<(i*4));
+              value |= (uint64_t(0xff)<<(i*8));
             }
           }
         }
@@ -454,8 +460,8 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
       return ;
     }
   }
-    dest->BypassInst = src;
     src->setNeedBypass();
+    dest->BypassInst = src;
 }
 template <class Impl>
 void
@@ -567,7 +573,6 @@ DefaultRename<Impl>::squash(const InstSeqNum &squash_seq_num, ThreadID tid)
     while (SRQ.size() != 0&&SRQ.front()->seqNum >= squash_seq_num){
       SRQ.pop_front();
     }
-
     doSquash(squash_seq_num, tid);
 }
 
@@ -919,8 +924,8 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
                 }
                 uint64_t hist_fullbit = cpu->hist_fullbit;
                 hist_fullbit ^= inst->pcState().pc() >> 1;
-                if (SRQ.size() >= 64){
-                  hist_fullbit ^= SRQ[63]->pcState().pc() >> 1;
+                if (SRQ.size() >= 16){
+                  hist_fullbit ^= SRQ[15]->pcState().pc() >> 1;
                 }
                 inst->hist_fullbit = hist_fullbit;
                 cpu->hist_fullbit = hist_fullbit;
@@ -929,6 +934,17 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
                   SRQ.pop_back();
                 //std::cout<<SRQ.size()<<std::endl;
                 storesInProgress[tid]++;
+
+                uint64_t trueIdx =
+                         inst->pcState().pc()^(inst->pcState().pc()>>10);
+      //((instruction->pcState().pc() >> 1)<<4)+instruction->microPC()%16;
+      //   if (!instruction->isMacroop() && !instruction->isMicroop()){
+      //     cpu->loadPdt.insertStore(trueIdx,cpu->getSSN());
+        //     }else{
+      //       cpu->loadPdt.invaild(trueIdx);
+      //       std::cout<<"isMacroop::";instruction->dump();
+        //     }
+              cpu->loadPdt.insertStore(trueIdx,inst->gSSN);
         }
         //uint64_t dssn = cpu->getSSN() - inst->gSSN + inst->diffSSN;
         uint64_t dssn = inst->diffSSN;
@@ -954,7 +970,6 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
             mergeInsts(inst, bypassLoad, tid);
             bypassLoad->setNoSQ();
             inst->setNoSQ();
-            inst->setNeedBypass();
             //std::cout<<"Nosq:";inst->dump();
             //for (auto i:SRQ)
           //    i->dump();

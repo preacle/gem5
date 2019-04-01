@@ -573,16 +573,17 @@ ROB<Impl>::doReexcute(ThreadID tid)
 //每次最多一条指令访存
 //最多四条指令访问SVW
        if (inst->isLoad() && !inst->isReexecuted()){
-         if (inst->isReexecuting()) return;
+         if (inst->isReexecuting()&&!inst->blockInReex) return;
+         inst->blockInReex = false;
          bool vio = cpu->SVWFilter.violation(inst);
-         if (!vio&&inst->isNoSQ()&&
-            inst->isBypassed()&&!inst->isNeedReexecute()){
-           if (inst->numDestRegs() == 1 && inst->bypassSSN != 0){
-             uint64_t diffSSN = inst->gSSN - inst->bypassSSN;
-             cpu->loadPdt.insertLoad(inst->pcState().pc(),
-             inst->bypassPC,diffSSN,inst->hist_fullbit);
-           }
-         }
+      //   if (!vio&&inst->isNoSQ()&&
+      //      inst->isBypassed()&&!inst->isNeedReexecute()){
+      //     if (inst->numDestRegs() == 1 && inst->bypassSSN != 0){
+      //       uint64_t diffSSN = inst->gSSN - inst->bypassSSN;
+      //       cpu->loadPdt.insertLoad(inst->pcState().pc(),
+      //       inst->bypassPC,diffSSN,inst->hist_fullbit);
+      //     }
+      //   }
          if (vio&&false){
              cpu->iew.squashDueToMemOrder(inst,inst->threadNumber);
             // inst->setReexecuted();

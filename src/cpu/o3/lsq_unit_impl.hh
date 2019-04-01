@@ -703,7 +703,9 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
 //2.是NoSQ,如果源指令执行,那么直接提交
 //3.不是NoSQ,提交
 
-            if (inst->isExecuted()){
+              if (inst->isExecuted()){
+              DPRINTF(LSQUnit, "Executing bypassed load PC %s, [sn:%lli]\n",
+                      inst->pcState(), inst->seqNum);
               if (inst->isNoSQ()&&inst->bpeffAddr == 0){ //
                   inst->setNeedReexecute();
               }
@@ -730,6 +732,8 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
             if (inst->bpeffAddr <= inst->effAddr &&
               inst->effAddr -inst->bpeffAddr +inst->effSize<= inst->bpeffSize
               && inst->bpeffSize != 0){
+                DPRINTF(LSQUnit, "Executing bypassing load PC %s, [sn:%lli]\n",
+                              inst->pcState(), inst->seqNum);
           //    std::cout<<"111:"<<inst->predValue;;inst->dump();
               uint8_t* x = new uint8_t(sizeof(uint64_t));
             //  std::cout<<"222";inst->dump();
@@ -758,10 +762,10 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
                   inst->predValue =
                     inst->predValue<<(inst->effAddr - inst->bpeffAddr);
                 if (!inst->isUint){
-                  bool flag = (1<<(4*inst->effSize-1))&inst->predValue;
+                  bool flag = (1<<(8*inst->effSize-1))&inst->predValue;
                   if (flag){
                     for (int i=inst->effSize;i<sizeof(uint64_t);i++){
-                      inst->predValue |= ((0xff)<<(i*4));
+                      inst->predValue |= (uint64_t(0xff)<<(i*8));
                     }
                   }
                 }
@@ -773,6 +777,8 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
               inst->setExecuted();
             }
             else{
+          DPRINTF(LSQUnit, "Executing clearNeedBypass load PC %s, [sn:%lli]\n",
+                            inst->pcState(), inst->seqNum);
 //对于Bypass指令,
 //会设计标志位NeedBypass,
 //意思为只执行一半也就是只获取TLB

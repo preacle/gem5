@@ -49,7 +49,8 @@ public:
       for (auto addr = inst_eff_addr1; addr <= inst_eff_addr2; addr++){
         SVWKey_t key = addr % size;
         SVWTag_t tag = addr / size;
-        uint64_t trueIdx = ((inst->pcState().pc() >> 1)<<4)+inst->microPC()%16;
+        uint64_t trueIdx = inst->pcState().pc()^(inst->pcState().pc()>>10);
+        //((inst->pcState().pc() >> 1)<<4)+inst->microPC()%16;
         insert(key,tag,inst->SSN,trueIdx);
       }
     }
@@ -58,16 +59,17 @@ public:
         SVWStoreSeqNum_t ret = 0;
         for (auto i:svwItems[key]){
             if (i.VAILD && i.TAG == tag){
-                return pair<SVWStoreSeqNum_t,bool>(i.SSN,i.PC);
+                return pair<SVWStoreSeqNum_t,uint64_t>(i.SSN,i.PC);
             }else{
                 ret = i.SSN;
             }
         }
-        return pair<SVWStoreSeqNum_t,bool>(ret,0);
+        return pair<SVWStoreSeqNum_t,uint64_t>(ret,0);
     }
 
     bool violation(DynInstPtr &inst){
       inst->bypassSSN = 0;
+      inst->bypassPC = 0;
       if (inst->effAddr == 0)
         return false;
       auto inst_eff_addr1 = inst->effAddr >> depCheckShift;
@@ -76,13 +78,19 @@ public:
       for (auto addr = inst_eff_addr1; addr <= inst_eff_addr2; addr++){
         SVWKey_t key = addr % size;
         SVWTag_t tag = addr / size;
-        auto ret = search(key, tag);
+        pair<SVWStoreSeqNum_t,uint64_t> ret = search(key, tag);
         SVWStoreSeqNum_t ssn = ret.first;
-        if (ret.second){ //有可能ＰＣ为0，TODO
-          inst->bypassSSN = ssn;
-          inst->bypassPC = ret.second;
+        if (inst->isBypassed() && inst->SSN == ssn){
+          if (ret.second){ //有可能ＰＣ为0，TODO
+            inst->bypassSSN = ssn;
+            inst->bypassPC = ret.second;
+          }
         }
         if (ssn > inst->SSN||(inst->isBypassed() && inst->SSN != ssn)){
+          if (ret.second){ //有可能ＰＣ为0，TODO
+            inst->bypassSSN = ssn;
+            inst->bypassPC = ret.second;
+          }
           return true;
         }
       }

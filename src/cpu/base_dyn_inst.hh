@@ -151,6 +151,7 @@ class BaseDynInst : public ExecContext, public RefCounted
     };
 
   public:
+    uint64_t intResult = 0;
     bool isUint = false;
     uint64_t hist = 0;
     uint64_t hist_fullbit = 0;
@@ -158,7 +159,9 @@ class BaseDynInst : public ExecContext, public RefCounted
     uint64_t needpdt = 0;
     bool pdt_v = false;
 
+    bool isLoadLinked = false;
 
+    bool blockInReex = false;
 
     uint64_t needlvp = 0;
     bool lvp_v = false;
@@ -738,7 +741,7 @@ class BaseDynInst : public ExecContext, public RefCounted
 
     /** Records an integer register being set to a value. */
     void setIntRegOperand(const StaticInst *si, int idx, IntReg val)
-    {
+    {   this->intResult = val;
         setScalarResult(val);
     }
 
