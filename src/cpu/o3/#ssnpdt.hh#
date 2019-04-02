@@ -1,24 +1,24 @@
-#ifndef __CPU_O3_SSNPDT_HH__
-#define __CPU_O3_SSNPDT_HH__
-#include <iostream>
-#include <vector>
-#define PREDSIZE (512)
-#define LOGPREDSIZE (9)
-using namespace std;
+#Ifndef __Cpu_O3_Ssnpdt_Hh__
+#Define __Cpu_O3_Ssnpdt_Hh__
+#Include <Iostream>
+#Include <Vector>
+#Define Predsize (512)
+#Define Logpredsize (9)
+Using Namespace Std;
 
-#define maxBypassDist 64
-class predItem{
-public:
-    uint64_t tag;   // tag
-    uint64_t value; // SSN差
-    uint64_t c;     // 置信度
-    uint64_t v;     // 有效位
-    uint64_t pc;
-    uint64_t pc_c;
+#Define Maxbypassdist 64
+Class Preditem{
+Public:
+    Uint64_T Tag;   // Tag
+    Uint64_T Value; // Ssn差
+    Uint64_T C;     // 置信度
+    Uint64_T V;     // 有效位
+    Uint64_T Pc;
+    Uint64_T Pc_C;
 
-public:
-        predItem():tag(0),value(0),c(0),v(0),pc(0),pc_c(0){}
-//        predItem(uint64_t t, uint64_t val, uint64_t c, uint64_t v):
+Public:
+        Preditem():Tag(0),Value(0),C(0),V(0),Pc(0),Pc_C(0){}
+//        Preditem(Uint64_T T, Uint64_T Val, Uint64_T C:, uint64_t v):
 //          tag(t),value(val),c(c),v(v){}
 
         bool insert(uint64_t insertTag,uint64_t insertVal,uint64_t insertPC){
@@ -111,7 +111,7 @@ public:
       uint64_t history,
       uint64_t& val,
       uint64_t& c,
-      bool& delay){
+      bool delay){
    //      std::cout<<"xxx:pc"<<pc<<" :gssn"<<gssn<<std::endl;
         uint64_t idx0 = (pc>>1) % PREDSIZE;
         uint64_t tag0 = (pc>>1) / PREDSIZE;
@@ -128,7 +128,7 @@ public:
         }
         if (table1[idx1]->tag == tag1){
           trueIdx = table1[idx1]->pc;
-          if (trueIdx == 0){
+          if(trueIdx == 0){
               delay = true;
           }
           pc_tag = trueIdx/PREDSIZE;
@@ -138,7 +138,7 @@ public:
   //        <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
   //        <<" valid:"<<pclink[pc_idx][0]
   //        <<" 3:"<<(gssn >= pclink[pc_idx][2])<<std::endl;
-          if (table1[idx1]->pc_c >= table1[idx1]->c
+          if (table1[idx1]->pc_c > table1[idx1]->c
             && pclink[pc_idx][0] && pclink[pc_idx][1] == pc_tag
             &&  gssn >= pclink[pc_idx][2]){
             val = gssn - pclink[pc_idx][2];
@@ -157,7 +157,7 @@ public:
         }
         else{
           trueIdx = table0[idx0]->pc;
-          if (trueIdx == 0){
+          if(trueIdx == 0){
               delay = true;
           }
           pc_tag = trueIdx/PREDSIZE;
@@ -167,7 +167,7 @@ public:
     //      <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
     //      <<" valid:"<<pclink[pc_idx][0]
     //      <<" 3:"<<(gssn >= pclink[pc_idx][2])<<std::endl;
-          if (table0[idx0]->pc_c >= table0[idx0]->c
+          if (table0[idx0]->pc_c > table0[idx0]->c
             && pclink[pc_idx][0] && pclink[pc_idx][1] == pc_tag
             &&  gssn >= pclink[pc_idx][2]){
     //        std::cout<<"xxx2:pc"<<pc

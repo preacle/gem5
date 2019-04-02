@@ -427,7 +427,7 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
                       rename_result.second);
   ++renameRenamedOperands;
 
-  if (dest->isLoadLinked){
+  if (dest->isLoadLinked||dest->needDelay){
     return;
   }
 
@@ -909,7 +909,7 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
           &&!inst->isSquashed()&&!inst->isMemBarrier()
           &&!inst->isWriteBarrier()){
           inst->pdt_v = cpu->loadPdt.getSSN(inst->pcState().pc(),inst->gSSN,
-           inst->hist_fullbit,inst->diffSSN, inst->needpdt);
+           inst->hist_fullbit,inst->diffSSN, inst->needpdt,inst->needDelay);
       //    instruction->lvp_v = cpu->lvp.getValue(thisPC.pc(),
       //      instruction->predValue, instruction->needlvp);
         //  instruction->sap_v = cpu->sap.getValue(thisPC.pc(),
@@ -936,7 +936,7 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
                 storesInProgress[tid]++;
 
                 uint64_t trueIdx =
-                         inst->pcState().pc()^(inst->pcState().pc()>>10);
+                         inst->pcState().pc();
       //((instruction->pcState().pc() >> 1)<<4)+instruction->microPC()%16;
       //   if (!instruction->isMacroop() && !instruction->isMicroop()){
       //     cpu->loadPdt.insertStore(trueIdx,cpu->getSSN());

@@ -533,11 +533,12 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
     // the squash.
 
     //update pdt
-//    if (inst->numDestRegs() == 1 && inst->bypassSSN != 0){
-//            uint64_t diffSSN = inst->gSSN - inst->bypassSSN;
-//            cpu->loadPdt.insertLoad(inst->pcState().pc(),
-//            inst->bypassPC,diffSSN,inst->hist_fullbit);
-//    }
+    if (inst->numDestRegs() == 1 && inst->bypassSSN != 0){
+             uint64_t diffSSN = inst->gSSN - inst->bypassSSN;
+            cpu->loadPdt.insertLoad(inst->pcState().pc(),
+            inst->bypassPC,diffSSN,inst->hist_fullbit);
+    }
+    inst->needUpdateSSN = true;
     if (inst->BypassInst){
       inst->BypassInst->clearNeedBypass();
       inst->BypassInst = NULL;
@@ -1290,6 +1291,9 @@ DefaultIEW<Impl>::executeInsts()
             if (inst->isLoad()) {
                 // Loads will mark themselves as executed, and their writeback
                 // event adds the instruction to the queue to commit
+
+                // todo
+                inst->isLoadLinked = inst->needDelay;
                 if (inst->isLoadLinked&&inst->SSN > cpu->retireSSN){
                   instQueue.deferMemInst(inst);
                   continue;

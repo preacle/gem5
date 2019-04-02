@@ -169,6 +169,8 @@ class BaseDynInst : public ExecContext, public RefCounted
     uint64_t needsap = 0;
     bool sap_v = false;
 
+    bool needDelay =  false;
+    bool needUpdateSSN = false;
     /** The sequence number of the instruction. */
     InstSeqNum seqNum = 0;
 

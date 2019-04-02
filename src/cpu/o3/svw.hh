@@ -49,7 +49,7 @@ public:
       for (auto addr = inst_eff_addr1; addr <= inst_eff_addr2; addr++){
         SVWKey_t key = addr % size;
         SVWTag_t tag = addr / size;
-        uint64_t trueIdx = inst->pcState().pc()^(inst->pcState().pc()>>10);
+        uint64_t trueIdx = inst->pcState().pc();
         //((inst->pcState().pc() >> 1)<<4)+inst->microPC()%16;
         insert(key,tag,inst->SSN,trueIdx);
       }
@@ -87,10 +87,9 @@ public:
           }
         }
         if (ssn > inst->SSN||(inst->isBypassed() && inst->SSN != ssn)){
-          if (ret.second){ //有可能ＰＣ为0，TODO
+            //有可能ＰＣ为0，TODO
             inst->bypassSSN = ssn;
             inst->bypassPC = ret.second;
-          }
           return true;
         }
       }
