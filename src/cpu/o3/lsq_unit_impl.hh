@@ -729,12 +729,14 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
         //  std::cout<<"cachebpinfo:"
         //<<inst->bpeffAddr+inst->bpeffSize;inst->dump();
           //
-            if (inst->bpeffAddr <= inst->effAddr &&
+            if ((!inst->isFloating()&&inst->bpeffAddr <= inst->effAddr &&
               inst->effAddr -inst->bpeffAddr +inst->effSize<= inst->bpeffSize
-              && inst->bpeffSize != 0){
+              && inst->bpeffSize != 0)
+              ||(inst->isFloating()&&inst->bpeffAddr==inst->effAddr
+                &&inst->effSize == inst->bpeffSize)){
                 DPRINTF(LSQUnit, "Executing bypassing load PC %s, [sn:%lli]\n",
                               inst->pcState(), inst->seqNum);
-          //    std::cout<<"111:"<<inst->predValue;;inst->dump();
+              std::cout<<"111:"<<inst->predValue;;inst->dump();
               uint8_t* x = new uint8_t(sizeof(uint64_t));
             //  std::cout<<"222";inst->dump();
               for (int i=0;i<sizeof(uint64_t);i++){
@@ -753,14 +755,14 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
                 inst->predValue &= *(uint64_t*)(x);
               //  std::cout<<"444"<<std::endl;
                 inst->predValue =
-                  inst->predValue<<(inst->effAddr - inst->bpeffAddr);
-                inst->setFloatRegOperand(
+                  inst->predValue>>((inst->effAddr - inst->bpeffAddr)*8);
+                inst->setFloatRegOperandBits(
                     inst->staticInst.get(), 0, inst->predValue);
               }else{
                   inst->predValue &= *(uint64_t*)(x);
                 //  std::cout<<"444"<<std::endl;
                   inst->predValue =
-                    inst->predValue<<(inst->effAddr - inst->bpeffAddr);
+                    inst->predValue>>((inst->effAddr - inst->bpeffAddr)*8);
                 if (!inst->isUint){
                   bool flag = (1<<(8*inst->effSize-1))&inst->predValue;
                   if (flag){

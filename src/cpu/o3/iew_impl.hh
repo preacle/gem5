@@ -1310,10 +1310,10 @@ DefaultIEW<Impl>::executeInsts()
                   inst->bpeffAddr = inst->BypassInst->effAddr;
                   inst->bpeffSize = inst->BypassInst->effSize;
                   inst->predValue =  inst->BypassInst->saved_value;
-//                  std::cout<<"NOSQ_bypass"
-//                  <<inst->BypassInst->effAddr
-//                  <<" "<<inst->BypassInst->effSize
-//                  <<" "<<inst->BypassInst->saved_value;inst->dump();
+                  std::cout<<"NOSQ_bypass"
+                  <<inst->BypassInst->effAddr
+                  <<" "<<inst->BypassInst->effSize
+                  <<" "<<inst->BypassInst->saved_value;inst->dump();
                   if (inst->BypassInst) {
                     inst->BypassInst->clearNeedBypass();
                     inst->BypassInst = NULL;

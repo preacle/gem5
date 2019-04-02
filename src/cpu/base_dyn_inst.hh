@@ -741,7 +741,8 @@ class BaseDynInst : public ExecContext, public RefCounted
 
     /** Records an integer register being set to a value. */
     void setIntRegOperand(const StaticInst *si, int idx, IntReg val)
-    {   this->intResult = val;
+    {
+        this->intResult = val;
         setScalarResult(val);
     }
 
@@ -754,6 +755,7 @@ class BaseDynInst : public ExecContext, public RefCounted
     /** Records an fp register being set to a value. */
     void setFloatRegOperand(const StaticInst *si, int idx, FloatReg val)
     {
+        this->intResult = val;
         setScalarResult(val);
     }
 

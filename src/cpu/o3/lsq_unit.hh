@@ -891,11 +891,21 @@ LSQUnit<Impl>::write(const RequestPtr &req,
 
     if (!(req->getFlags() & Request::CACHE_BLOCK_ZERO) && \
         !req->isCacheMaintenance()){
+          DPRINTF(LSQUnit,"Saved value in store 0,size: %d",size);
           memcpy(storeQueue[store_idx].data, data, size);
-          storeQueue[store_idx].inst->reexecute_memData = new uint8_t(size);
+          DPRINTF(LSQUnit,"Saved value in store 1,size: %d",size);
+          storeQueue[store_idx].inst->reexecute_memData = new uint8_t[8];
+          DPRINTF(LSQUnit,"Saved value in store 2,size: %d",size);
+          for (int i=0;i<8;i++)
+              storeQueue[store_idx].inst->reexecute_memData[i] = 0;
           memcpy(storeQueue[store_idx].inst->reexecute_memData,data,size);
+          DPRINTF(LSQUnit,"Saved value in store 3,size: %d",size);
           storeQueue[store_idx].inst->saved_value
             = *((uint64_t*)(storeQueue[store_idx].inst->reexecute_memData));
+          delete[] storeQueue[store_idx].inst->reexecute_memData;
+          DPRINTF(LSQUnit,"Saved value in store 4,size: %d",size);
+          std::cout<<"1111:"<<storeQueue[store_idx].inst->saved_value<<" ";
+          storeQueue[store_idx].inst->dump();
           storeQueue[store_idx].inst->v_saved_value = 1;
         }
 

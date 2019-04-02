@@ -1198,14 +1198,14 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
               cpu->loadPdt.insertLoad(head_inst->pcState().pc(),
               head_inst->bypassPC,diffSSN,head_inst->hist_fullbit);
         }
-        if (head_inst->isLoad()
-          &&head_inst->bypassSSN == 0
-          &&head_inst->bypassPC == 0
-          &&head_inst->isBypassed()){
-              cpu->loadPdt.clearLoad(
-              head_inst->pcState().pc(),
-              head_inst->hist_fullbit);
-        }
+ //       if (head_inst->isLoad()
+ //         &&head_inst->bypassSSN == 0
+ //        &&head_inst->bypassPC == 0
+ //         &&head_inst->isBypassed()){
+ //             cpu->loadPdt.clearLoad(
+ //             head_inst->pcState().pc(),
+ //             head_inst->hist_fullbit);
+ //       }
 
   //  std::cout<<"commitHead: SN:"<<head_inst->seqNum
   //  <<" SSN:"<<head_inst->SSN<<" ";head_inst->dump();
@@ -1369,8 +1369,10 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
     }
 
     updateComInstStats(head_inst);
-//    std::cout<<"finish_inst: result:"
-//    <<head_inst->intResult<<" ";head_inst->dump();
+    std::cout<<"finish_inst: result:"
+    <<head_inst->intResult<<" addr"
+    <<head_inst->effAddr<<" ";
+    head_inst->dump();
     if (FullSystem) {
         if (thread[tid]->profile) {
             thread[tid]->profilePC = head_inst->instAddr();

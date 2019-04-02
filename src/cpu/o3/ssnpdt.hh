@@ -134,7 +134,7 @@ public:
   //        <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
   //        <<" valid:"<<pclink[pc_idx][0]
   //        <<" 3:"<<(gssn >= pclink[pc_idx][2])<<std::endl;
-          if (table1[idx1]->pc_c >= table1[idx1]->c
+          if (table1[idx1]->pc_c > table1[idx1]->c
             && pclink[pc_idx][0] && pclink[pc_idx][1] == pc_tag
             &&  gssn >= pclink[pc_idx][2]){
             val = gssn - pclink[pc_idx][2];
@@ -160,7 +160,7 @@ public:
     //      <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
     //      <<" valid:"<<pclink[pc_idx][0]
     //      <<" 3:"<<(gssn >= pclink[pc_idx][2])<<std::endl;
-          if (table0[idx0]->pc_c >= table0[idx0]->c
+          if (table0[idx0]->pc_c > table0[idx0]->c
             && pclink[pc_idx][0] && pclink[pc_idx][1] == pc_tag
             &&  gssn >= pclink[pc_idx][2]){
     //        std::cout<<"xxx2:pc"<<pc
