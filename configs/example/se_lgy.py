@@ -64,6 +64,7 @@ from common import CpuConfig
 from common import MemConfig
 from common.Caches import *
 from common import cpu2006
+from common import BPConfig
 
 # Check if KVM support has been enabled, we might need to do VM
 # configuration if that's the case.
@@ -281,6 +282,10 @@ for i in xrange(np):
 
     if options.checker:
         system.cpu[i].addCheckerCpu()
+
+    if options.bp_type:
+        bpClass = BPConfig.get(options.bp_type)
+        system.cpu[i].branchPred = bpClass()
 
     system.cpu[i].createThreads()
 

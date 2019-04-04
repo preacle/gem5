@@ -49,6 +49,7 @@
 #include <cstring>
 #include <map>
 #include <queue>
+#include <vector>
 
 #include "arch/generic/debugfaults.hh"
 #include "arch/isa_traits.hh"
@@ -88,6 +89,7 @@ class LSQUnit {
     /** Constructs an LSQ unit. init() must be called prior to use. */
     LSQUnit();
 
+    std::vector<int> memDepVec(512,0);
     /** Initializes the LSQ unit with the specified number of entries. */
     void init(O3CPU *cpu_ptr, IEW *iew_ptr, DerivO3CPUParams *params,
             LSQ *lsq_ptr, unsigned maxLQEntries, unsigned maxSQEntries,

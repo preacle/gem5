@@ -45,6 +45,7 @@
 
 #include <queue>
 #include <set>
+#include <vector>
 
 #include "base/statistics.hh"
 #include "cpu/o3/comm.hh"
@@ -112,7 +113,6 @@ class DefaultIEW
         Squashing,
         Unblocking
     };
-
   private:
     /** Overall stage status. */
     Status _status;
