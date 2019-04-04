@@ -1326,6 +1326,11 @@ DefaultIEW<Impl>::executeInsts()
   //              std::cout<<"NOSQ_bypass";inst->dump();
                 fault = ldstQueue.executeLoad(inst);
 
+                if (inst->BypassInst){
+                    instQueue.deferMemInst(inst);
+                    continue;
+                }
+
                 if (inst->isTranslationDelayed() &&
                     fault == NoFault) {
                     // A hw page table walk is currently going on; the

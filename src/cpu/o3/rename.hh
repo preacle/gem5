@@ -355,9 +355,10 @@ class DefaultRename
     /** Queue of all instructions coming from decode this cycle. */
     InstQueue insts[Impl::MaxThreads];
 
+public:
     /** Queue of store instructions coming from decode this cycle. */
     InstQueue SRQ;
-
+private:
     /** Skid buffer between rename and decode. */
     InstQueue skidBuffer[Impl::MaxThreads];
 

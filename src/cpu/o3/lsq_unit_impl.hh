@@ -653,12 +653,38 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
       iewStage->activityThisCycle();
       return NoFault;
     }
+    if (!inst->isNeedBypass()){
+      inst->readInCache= true;
+      inst->setNeedBypass();
+    }
 
     load_fault = inst->initiateAcc();
     if (!inst->isNeedBypass()&&inst->isTranslationDelayed() &&
         load_fault == NoFault)
         return load_fault;
 
+    if (inst->readInCache){
+      uint64_t idx = (inst->effAddr >> 4)%512;
+      uint64_t gssn = vioMap[idx];
+      int ssqidx = -1;
+      if (cpu->rename.SRQ.size() != 0){
+        uint64_t base = cpu->rename.SRQ[0]->gSSN;
+        ssqidx = gssn - base;
+      }
+      if (ssqidx >=0 && ssqidx < cpu->rename.SRQ.size()){
+
+        auto maybeBypassInst = cpu->rename.SRQ[ssqidx];
+        if (maybeBypassInst->effAddr <= inst->effAddr
+          && inst->effAddr - maybeBypassInst->effAddr + inst->effSize
+          <= maybeBypassInst->effSize){
+            inst->SSN = maybeBypassInst->SSN;
+            inst->BypassInst = maybeBypassInst;
+            maybeBypassInst->setNeedBypass();
+            inst->readInCache = false;
+            return NoFault;
+        }
+      }
+    }
     // If the instruction faulted or predicated false, then we need to send it
     // along to commit without the instruction completing.
     if (load_fault != NoFault || !inst->readPredicate()) {
@@ -794,7 +820,11 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
               inst->initiateAcc();
             }
         }else{
+          inst->clearNeedBypass();
           inst->SSN  = cpu->getRetireSSN();
+          inst->translationStarted(false);
+          inst->translationCompleted(false);
+          inst->initiateAcc();
         }
         if (checkLoads)
             return checkViolations(load_idx, inst);
@@ -850,6 +880,10 @@ LSQUnit<Impl>::executeStore(DynInstPtr &store_inst)
 
         ++storesToWB;
     }
+
+    uint64_t idx = (store_inst->effAddr >> 4)%512;
+    vioMap[idx] = store_inst->gSSN;
+
     return store_fault;
     //return checkViolations(load_idx, store_inst);
 

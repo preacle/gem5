@@ -151,6 +151,7 @@ class BaseDynInst : public ExecContext, public RefCounted
     };
 
   public:
+    bool readInCache = false;
     uint64_t intResult = 0;
     bool isUint = false;
     uint64_t hist = 0;
