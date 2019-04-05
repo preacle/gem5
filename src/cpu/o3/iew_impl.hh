@@ -515,13 +515,13 @@ template<class Impl>
 void
 DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
 {
-//    std::cout<<"squashDueToMemOrder:all: diffSSN:"
-//    <<inst->gSSN - inst->bypassSSN
-//    <<" preddiffSSN:"
-//    <<inst->diffSSN
-//    <<" bypassPC:"
-//    <<inst->bypassPC;
-//    inst->dump();
+    std::cout<<"squashDueToMemOrder:all: diffSSN:"
+    <<inst->gSSN - inst->bypassSSN
+    <<" preddiffSSN:"
+    <<inst->diffSSN
+    <<" bypassPC:"
+    <<inst->bypassPC;
+    inst->dump();
     ++memOrderViolationEvents;
     DPRINTF(IEW, "[tid:%i]: Memory violation, squashing violator and younger "
             "insts, PC: %s [sn:%i].\n", tid, inst->pcState(), inst->seqNum);
@@ -1311,13 +1311,19 @@ DefaultIEW<Impl>::executeInsts()
                   instQueue.deferMemInst(inst);
                   continue;
                 }else if (inst->BypassInst){
+                  inst->maybeBypassSSN = inst->BypassInst->gSSN;
                   inst->bpeffAddr = inst->BypassInst->effAddr;
                   inst->bpeffSize = inst->BypassInst->effSize;
                   inst->predValue =  inst->BypassInst->saved_value;
                   std::cout<<"NOSQ_bypass"
+                  <<inst->effAddr
+                  <<" "<<inst->effSize
+                  <<" "<<inst->BypassInst->saved_value;inst->dump();
+
+                  std::cout<<"NOSQ_bypass"
                   <<inst->BypassInst->effAddr
                   <<" "<<inst->BypassInst->effSize
-                  <<" "<<inst->BypassInst->saved_value;inst->dump();
+                  <<" "<<inst->BypassInst->saved_value;inst->BypassInst->dump();
                   if (inst->BypassInst) {
                     inst->BypassInst->clearNeedBypass();
                     inst->BypassInst = NULL;

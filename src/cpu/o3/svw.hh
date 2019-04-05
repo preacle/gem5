@@ -41,6 +41,7 @@ public:
     }
 
     void insert(DynInstPtr &inst){
+//      std::cout<<"insert SVW:"<<inst->gSSN<<" ";inst->dump();
       if (inst->effAddr == 0||inst->effSize == 0)
         return;
       auto inst_eff_addr1 = inst->effAddr >> depCheckShift;

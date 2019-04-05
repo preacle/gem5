@@ -147,6 +147,8 @@ LSQUnit<Impl>::LSQUnit()
       isStoreBlocked(false), storeInFlight(false), hasPendingPkt(false),
       pendingPkt(nullptr)
 {
+   for (int i=0;i<512;i++)
+       vioMap.push_back(0);
 }
 
 template<class Impl>
@@ -663,8 +665,8 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
         load_fault == NoFault)
         return load_fault;
 
-    if (inst->readInCache){
-      uint64_t idx = (inst->effAddr >> 4)%512;
+    if (inst->readInCache||true){
+      uint64_t idx = (inst->effAddr >> 3)%512;
       uint64_t gssn = vioMap[idx];
       int ssqidx = -1;
       if (cpu->rename.SRQ.size() != 0){
@@ -676,14 +678,21 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
         auto maybeBypassInst = cpu->rename.SRQ[ssqidx];
         if (maybeBypassInst->effAddr <= inst->effAddr
           && inst->effAddr - maybeBypassInst->effAddr + inst->effSize
-          <= maybeBypassInst->effSize){
+          <= maybeBypassInst->effSize&&inst->gSSN >= maybeBypassInst->gSSN){
+            if (inst->maybeBypassSSN != maybeBypassInst->SSN){
+      //      std::cout<<"first bypass:"<<maybeBypassInst->effAddr;maybeBypassInst->dump();
             inst->SSN = maybeBypassInst->SSN;
+            inst->maybeBypassSSN = maybeBypassInst->SSN;
             inst->BypassInst = maybeBypassInst;
             maybeBypassInst->setNeedBypass();
             inst->readInCache = false;
+     //       std::cout<<"first bypass:"<<maybeBypassInst->effAddr;maybeBypassInst->dump();
             return NoFault;
+          }
         }
       }
+      if (inst->readInCache)
+          inst->clearNeedBypass();
     }
     // If the instruction faulted or predicated false, then we need to send it
     // along to commit without the instruction completing.
@@ -880,8 +889,8 @@ LSQUnit<Impl>::executeStore(DynInstPtr &store_inst)
 
         ++storesToWB;
     }
-
-    uint64_t idx = (store_inst->effAddr >> 4)%512;
+    std::cout<<"executeStore:"<<store_inst->effAddr;store_inst->dump();
+    uint64_t idx = (store_inst->effAddr >> 3)%512;
     vioMap[idx] = store_inst->gSSN;
 
     return store_fault;

@@ -910,6 +910,10 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
           &&!inst->isWriteBarrier()){
           inst->pdt_v = cpu->loadPdt.getSSN(inst->pcState().pc(),inst->gSSN,
            inst->hist_fullbit,inst->diffSSN, inst->needpdt,inst->needDelay);
+           std::cout<<"pred:"<<inst->diffSSN<<" gssn:"<<inst->gSSN;inst->dump();
+        for (int i=0;i<SRQ.size();i++){
+            std::cout<<" SRQ:"<<SRQ[i]->gSSN<<" SSN:"<<SRQ[i]->SSN<<" ";SRQ[i]->dump();
+        }
       //    instruction->lvp_v = cpu->lvp.getValue(thisPC.pc(),
       //      instruction->predValue, instruction->needlvp);
         //  instruction->sap_v = cpu->sap.getValue(thisPC.pc(),

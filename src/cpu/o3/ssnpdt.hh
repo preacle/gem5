@@ -25,20 +25,25 @@ public:
             if (v == 1){
                if (tag == insertTag){
                     if (value == insertVal){
+//			std::cout<<"insert:1"<<std::endl;
                         c = (63 == c)?63:c+1;
                     }
                     else{
+//			std::cout<<"insert:2"<<std::endl;
                         value = insertVal;
                         c = 1;
                     }
 
                     if ( pc == insertPC){
+//			std::cout<<"insert:3"<<std::endl;
                       pc_c = (63 == pc_c)?63:pc_c+1;
                     }else{
+//			std::cout<<"insert:4"<<std::endl;
                       pc = insertPC;
                       pc_c = 1;
                     }
                 }else{
+//			std::cout<<"insert:5"<<std::endl;
                     v = 0;
                     //tag = insertTag;
                     //value = insertVal;
@@ -47,6 +52,7 @@ public:
                     //pc_c = 0;
                 }
             }else{
+//			std::cout<<"insert:6"<<std::endl;
                 v = 1;
                 tag = insertTag;
                 value = insertVal;
@@ -58,6 +64,7 @@ public:
         }
 
         void clear(uint64_t clearTag){
+          std::cout<<"clear"<<std::endl;
           if (tag == clearTag){
             c = 0;
             value = 9999;
@@ -84,6 +91,7 @@ public:
       for (int i=0;i!=sz;i++) table1[i] = new predItem();
     }
     bool insertLoad(uint64_t pc, uint64_t pc_v, uint64_t val,uint64_t history){
+  //      std::cout<<"insert: pc"<<pc<<" pc_v"<<pc_v<<" val"<<val<<" history"<<history<<std::endl;
         uint64_t idx0 = (pc>>1) % PREDSIZE;
         uint64_t tag0 = (pc>>1) / PREDSIZE;
         table0[idx0]->insert(tag0,val,pc_v);
@@ -112,7 +120,7 @@ public:
       uint64_t& val,
       uint64_t& c,
       bool& delay){
-   //      std::cout<<"xxx:pc"<<pc<<" :gssn"<<gssn<<std::endl;
+//         std::cout<<"getSSN:pc"<<pc<<" :gssn"<<gssn<<std::endl;
         uint64_t idx0 = (pc>>1) % PREDSIZE;
         uint64_t tag0 = (pc>>1) / PREDSIZE;
 
@@ -123,7 +131,7 @@ public:
         uint64_t idx1 = ((pc)^(pc>>9)^history)% PREDSIZE;
         uint64_t tag1 = ((pc)^(pc>>11)^history)/ PREDSIZE;
         if (table0[idx0]->tag != tag0 && table1[idx1]->tag != tag1){
-  //        std::cout<<"xxx:pc"<<pc<<"miss"<<std::endl;
+  //          std::cout<<"getSSN:pc"<<pc<<"miss"<<std::endl;
             return false;
         }
         if (table1[idx1]->tag == tag1){
@@ -133,19 +141,19 @@ public:
           }
           pc_tag = trueIdx/PREDSIZE;
           pc_idx = trueIdx%PREDSIZE;
-  //        std::cout<<"xxx1:pc"<<pc<<" pc_c:"<<table1[idx1]->pc_c
-  //        <<" c:"<<table1[idx1]->c
-  //        <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
-  //        <<" valid:"<<pclink[pc_idx][0]
+ //         std::cout<<"getSSN:pc"<<pc<<" pc_c:"<<table1[idx1]->pc_c
+ //         <<" c:"<<table1[idx1]->c
+ //         <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
+ //         <<" valid:"<<pclink[pc_idx][0]
   //        <<" 3:"<<(gssn >= pclink[pc_idx][2])<<std::endl;
-          if (table1[idx1]->pc_c >= table1[idx1]->c
+          if (table1[idx1]->pc_c > table1[idx1]->c
             && pclink[pc_idx][0] && pclink[pc_idx][1] == pc_tag
             &&  gssn >= pclink[pc_idx][2]){
             val = gssn - pclink[pc_idx][2];
-  //          std::cout<<"xxx1:pc"
-  //          <<pc<<" validTag:"
-  //          <<(pclink[pc_idx][1] == pc_tag)
-  //          <<" value:"<<val<<std::endl;
+ //           std::cout<<"getSSN:pc"
+ //           <<pc<<" :idx"<<trueIdx<<" validTag"
+ //           <<(pclink[pc_idx][1] == pc_tag)
+ //           <<" value:"<<val<<std::endl;
             if (val < maxBypassDist){
               c = table1[idx1]->pc_c;
               return true;
@@ -162,17 +170,18 @@ public:
           }
           pc_tag = trueIdx/PREDSIZE;
           pc_idx = trueIdx%PREDSIZE;
-    //      std::cout<<"xxx2:pc"<<pc<<" pc_c:"<<table0[idx1]->pc_c
-    //      <<" c:"<<table0[idx1]->c
-    //      <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
-    //      <<" valid:"<<pclink[pc_idx][0]
-    //      <<" 3:"<<(gssn >= pclink[pc_idx][2])<<std::endl;
-          if (table0[idx0]->pc_c >= table0[idx0]->c
+  //        std::cout<<"getSSN:pc"<<pc<<" pc_c:"<<table0[idx1]->pc_c
+  //        <<" c:"<<table0[idx1]->c
+  //        <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
+  //        <<" valid:"<<pclink[pc_idx][0]
+  //        <<" 3:"<<(gssn >= pclink[pc_idx][2])<<std::endl;
+          if (table0[idx0]->pc_c > table0[idx0]->c
             && pclink[pc_idx][0] && pclink[pc_idx][1] == pc_tag
             &&  gssn >= pclink[pc_idx][2]){
-    //        std::cout<<"xxx2:pc"<<pc
-    //        <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
-    //        <<" value:"<<val<<std::endl;
+ //           std::cout<<"getSSN:pc"<<pc
+ //           <<"trueIdx"<<trueIdx
+ //           <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
+ //           <<" value:"<<val<<std::endl;
             val = gssn - pclink[pc_idx][2];
             if (val < maxBypassDist){
               c = table0[idx0]->pc_c;
