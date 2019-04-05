@@ -96,8 +96,8 @@ public:
         uint64_t tag0 = (pc>>1) / PREDSIZE;
         table0[idx0]->insert(tag0,val,pc_v);
 
-        uint64_t idx1 = ((pc)^(pc>>9)^history)% PREDSIZE;
-        uint64_t tag1 = ((pc)^(pc>>11)^history)/ PREDSIZE;
+        uint64_t idx1 = ((pc>>1)^(pc>>9)^history)% PREDSIZE;
+        uint64_t tag1 = ((pc)^(pc>>11)^history)% PREDSIZE;
         table1[idx1]->insert(tag1,val,pc_v);
 
         return true;
@@ -107,8 +107,8 @@ public:
       uint64_t tag0 = (pc>>1) / PREDSIZE;
       table0[idx0]->clear(tag0);
 
-      uint64_t idx1 = ((pc)^(pc>>9)^history)% PREDSIZE;
-      uint64_t tag1 = ((pc)^(pc>>11)^history)/ PREDSIZE;
+      uint64_t idx1 = ((pc>>1)^(pc>>9)^history)% PREDSIZE;
+      uint64_t tag1 = ((pc)^(pc>>11)^history)% PREDSIZE;
       table1[idx1]->clear(tag1);
 
       return true;
@@ -128,8 +128,8 @@ public:
         uint64_t pc_tag;
         uint64_t pc_idx;
 
-        uint64_t idx1 = ((pc)^(pc>>9)^history)% PREDSIZE;
-        uint64_t tag1 = ((pc)^(pc>>11)^history)/ PREDSIZE;
+        uint64_t idx1 = ((pc>>1)^(pc>>9)^history)% PREDSIZE;
+        uint64_t tag1 = ((pc)^(pc>>11)^history)% PREDSIZE;
         if (table0[idx0]->tag != tag0 && table1[idx1]->tag != tag1){
   //          std::cout<<"getSSN:pc"<<pc<<"miss"<<std::endl;
             return false;
