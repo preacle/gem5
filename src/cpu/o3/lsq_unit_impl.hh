@@ -649,17 +649,6 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
 
     assert(!inst->isSquashed());
 
-    if (inst->isExecuted()){
-    DPRINTF(LSQUnit, "Executing bypassed load PC %s, [sn:%lli]\n",
-            inst->pcState(), inst->seqNum);
-  //  if (inst->isNoSQ()&&inst->bpeffAddr == 0){ //
-  //      inst->setNeedReexecute();
-  //  }
-  //  inst->setNeedReexecute();
-    iewStage->instToCommit(inst);
-    iewStage->activityThisCycle();
-    return load_fault;
-  }
     // set SSN
     if (inst->isLVP()){
       cpu->load_nums++;
@@ -676,7 +665,17 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
     if (!inst->isNeedBypass()&&inst->isTranslationDelayed() &&
         load_fault == NoFault)
         return load_fault;
-
+    if (inst->isExecuted()){
+        DPRINTF(LSQUnit, "Executing bypassed load PC %s, [sn:%lli]\n",
+                inst->pcState(), inst->seqNum);
+      //  if (inst->isNoSQ()&&inst->bpeffAddr == 0){ //
+      //      inst->setNeedReexecute();
+      //  }
+      //  inst->setNeedReexecute();
+        iewStage->instToCommit(inst);
+        iewStage->activityThisCycle();
+        return load_fault;
+      }
     if ((inst->readInCache||true)&&(!inst->isLoadLinked)){
       uint64_t idx = (inst->effAddr)%512;
       uint64_t gssn = vioMap[idx];
