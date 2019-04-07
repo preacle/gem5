@@ -75,11 +75,12 @@ LSQUnit<Impl>::WritebackEvent::process()
     assert(!lsqPtr->cpu->switchedOut());
 
     lsqPtr->writeback(inst, pkt);
+    if (pkt != nullptr){
+      if (pkt->senderState)
+          delete pkt->senderState;
 
-    if (pkt->senderState)
-        delete pkt->senderState;
-
-    delete pkt;
+      delete pkt;
+    }
 }
 
 template<class Impl>
@@ -696,21 +697,37 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
             std::cout<<"change bypass:"<<inst->diffSSN<<" "<<inst->gSSN-maybeBypassInst->gSSN;maybeBypassInst->dump();
             inst->SSN = maybeBypassInst->SSN;
                   inst->diffSSN = inst->gSSN - maybeBypassInst->SSN;
-            inst->maybeBypassSSN = maybeBypassInst->SSN;
-            inst->BypassInst = maybeBypassInst;
-            maybeBypassInst->setNeedBypass();
             inst->readInCache = false;
-            inst->pred_baypass = true;
+            inst->pred_bypass = true;
+/*
+            maybeBypassInst->setNeedBypass();
+            inst->BypassInst = maybeBypassInst;
+            inst->pred_bypass = true;
+*/
+            inst->maybeBypassSSN = maybeBypassInst->gSSN;
+            inst->bpeffAddr = maybeBypassInst->effAddr;
+            inst->bpeffSize = maybeBypassInst->effSize;
+            inst->predValue =  maybeBypassInst->saved_value;
+
      //       std::cout<<"first bypass:"<<maybeBypassInst->effAddr;maybeBypassInst->dump();
-            return NoFault;
+          //return NoFault;
           }
         }
       }
-      if (inst->maybeBypassSSN == 0||inst->isLoadLinked){
-        inst->clearNeedBypass();
-        inst->pred_forward = true;
-      }
-
+    }
+    if (inst->maybeBypassSSN == 0
+      ||inst->isLoadLinked
+      ||inst->strictlyOrdered()
+      ||inst->isMemBarrier()
+      ||inst->isNonSpeculative()
+      ||inst->isStoreConditional()
+      ||inst->isWriteBarrier()){
+      inst->clearNeedBypass();
+      inst->pred_forward = true;
+      inst->SSN  = cpu->getRetireSSN();
+      inst->translationStarted(false);
+      inst->translationCompleted(false);
+      load_fault = inst->initiateAcc();
     }
     // If the instruction faulted or predicated false, then we need to send it
     // along to commit without the instruction completing.
@@ -827,11 +844,22 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
                 inst->setIntRegOperand(
                   inst->staticInst.get(), 0, inst->predValue);
               }
-              iewStage->instToCommit(inst);
-              iewStage->activityThisCycle();
-              inst->setExecuted();
-            }
-            else{
+              if (inst->pred_bypass){
+                inst->setExecuted();
+                /*
+                iewStage->instToCommit(inst);
+                iewStage->activityThisCycle();
+                */
+                WritebackEvent *wb = new WritebackEvent(inst, nullptr, this);
+                cpu->schedule(wb, curTick());
+
+
+              }else{
+                iewStage->instToCommit(inst);
+                iewStage->activityThisCycle();
+                inst->setExecuted();
+              }
+            }else{
           DPRINTF(LSQUnit, "Executing clearNeedBypass load PC %s, [sn:%lli]\n",
                             inst->pcState(), inst->seqNum);
 //对于Bypass指令,
@@ -846,13 +874,15 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
               inst->translationCompleted(false);
               inst->initiateAcc();
             }
-        }else{
-          inst->clearNeedBypass();
+        }
+        /*
+        else{
           inst->SSN  = cpu->getRetireSSN();
           inst->translationStarted(false);
           inst->translationCompleted(false);
-          inst->initiateAcc();
+          load_fault = inst->initiateAcc();
         }
+        */
         if (checkLoads)
             return checkViolations(load_idx, inst);
     }
@@ -1333,7 +1363,7 @@ LSQUnit<Impl>::writeback(DynInstPtr &inst, PacketPtr pkt)
         return;
     }
 
-    if (inst->isNeedBypass() && !inst->isReexecuting())
+    if (inst->isNeedBypass() && !inst->isReexecuting() && !inst->pred_bypass)
         return;
 //如果执行的包延迟到达,那么会有两个重复的包. 应该抛弃
   //  if (inst->isReexecuted())

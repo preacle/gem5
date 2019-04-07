@@ -155,7 +155,7 @@ class BaseDynInst : public ExecContext, public RefCounted
 
     bool pred_ssn = false;
     bool pred_pc = false;
-    bool pred_baypass = false;
+    bool pred_bypass = false;
     bool pred_forward = false;
 
     uint64_t intResult = 0;

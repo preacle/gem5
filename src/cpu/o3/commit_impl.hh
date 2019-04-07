@@ -1194,20 +1194,21 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
       if (head_inst->isLoad()
           &&head_inst->numDestRegs() == 1
           && head_inst->bypassPC != 0
-          && !head_inst->needUpdateSSN){
+        //  && !head_inst->needUpdateSSN
+        ){
               uint64_t diffSSN = head_inst->gSSN - head_inst->bypassSSN;
               cpu->loadPdt.insertLoad(head_inst->pcState().pc(),
               head_inst->bypassPC,diffSSN,head_inst->hist_fullbit);
         }
      //update for svw miss,but squash due to memroy violation
-      // if (head_inst->isLoad()
-          // &&head_inst->numDestRegs() == 1
-          // && head_inst->needUpdateSSN){
-          // && head_inst->bypassPC == 0
-             // uint64_t diffSSN = head_inst->gSSN - head_inst->bypassSSN;
-//              cpu->loadPdt.insertLoad(head_inst->pcState().pc(),
-//             head_inst->bypassPC,diffSSN,head_inst->hist_fullbit);
-//        }
+       if (head_inst->isLoad()
+           &&head_inst->numDestRegs() == 1
+           && head_inst->bypassPC == 0
+           && head_inst->needUpdateSSN){
+              uint64_t diffSSN = head_inst->gSSN - head_inst->bypassSSN;
+              cpu->loadPdt.insertLoad(head_inst->pcState().pc(),
+             head_inst->bypassPC,diffSSN,head_inst->hist_fullbit);
+        }
  //       if (head_inst->isLoad()
  //         &&head_inst->bypassSSN == 0
  //        &&head_inst->bypassPC == 0

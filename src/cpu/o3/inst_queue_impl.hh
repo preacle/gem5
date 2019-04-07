@@ -850,49 +850,74 @@ InstructionQueue<Impl>::scheduleReadyInsts()
         if (issuing_inst->isStore()){
           std::cout<<issuing_inst->SSN<<" store:inst";issuing_inst->dump();
         }
-        if (issuing_inst->isLoad()){
-      //    if (issuing_inst->isExecuted()){
-          //if (issuing_inst->isNoSQ()){ //
-          //    issuing_inst->setNeedReexecute();
-          //}
-        //  inst->setNeedReexecute();
-      //    cpu->iew.instToCommit(issuing_inst);
-      //    cpu->iew.activityThisCycle();
-          //ThreadID tid = issuing_inst->threadNumber;
-          //memDepUnit[tid].issue(issuing_inst);
-      //    listOrder.erase(order_it++);
-      //    continue;
-      //  }
+
+         if (issuing_inst->isLoad()&&!issuing_inst->isExecuted()){
+
+          // ThreadID tid = issuing_inst->threadNumber;
+          // memDepUnit[tid].issue(issuing_inst);
+          // if (issuing_inst->isExecuted()){
+          // if (issuing_inst->isNoSQ()){ //
+              // issuing_inst->setNeedReexecute();
+          // }
+          //inst->setNeedReexecute();
+          // cpu->iew.instToCommit(issuing_inst);
+          // cpu->iew.activityThisCycle();
+          // listOrder.erase(order_it++);
+          // continue;
+         // }
+
         //  std::cout<<"reex:"<<cpu->reexSSN<<" ret:"<<cpu->retireSSN<<std::endl;
         //  std::cout<<issuing_inst->SSN<<std::endl;
           if (issuing_inst->isLoadLinked&&issuing_inst->SSN > cpu->retireSSN){
-              order_it++;
-              //deferMemInst(issuing_inst);
+            readyInsts[op_class].pop();
+            if (!readyInsts[op_class].empty()) {
+                moveToYoungerInst(order_it);
+            } else {
+                readyIt[op_class] = listOrder.end();
+                queueOnList[op_class] = false;
+            }
+               listOrder.erase(order_it++);
+              deferMemInst(issuing_inst);
               continue;
           }
           if (issuing_inst->needDelay){
             issuing_inst->pred_pc = true;
           }
           if (issuing_inst->needDelay&&issuing_inst->SSN > cpu->reexSSN){
-
-            order_it++;
-            //deferMemInst(issuing_inst);
+            readyInsts[op_class].pop();
+            if (!readyInsts[op_class].empty()) {
+                moveToYoungerInst(order_it);
+            } else {
+                readyIt[op_class] = listOrder.end();
+                queueOnList[op_class] = false;
+            }
+            listOrder.erase(order_it++);
+            deferMemInst(issuing_inst);
             continue;
           }
 
-          if (issuing_inst->BypassInst&&!issuing_inst->BypassInst->readyToCommit()){
-            issuing_inst ->pred_ssn = true;
-            order_it++;
-            continue;
-          }
-          if (issuing_inst->gSSN > cpu->reexSSN + 20){
-            order_it++;
+           if (issuing_inst->BypassInst&&!issuing_inst->BypassInst->readyToCommit()){
+             readyInsts[op_class].pop();
+             if (!readyInsts[op_class].empty()) {
+                 moveToYoungerInst(order_it);
+             } else {
+                 readyIt[op_class] = listOrder.end();
+                 queueOnList[op_class] = false;
+             }
+             issuing_inst ->pred_ssn = true;
+              listOrder.erase(order_it++);
+             deferMemInst(issuing_inst);
+             continue;
+           }
+        //  if (issuing_inst->gSSN > cpu->reexSSN + 30){
+        //    order_it++;
             //deferMemInst(issuing_inst);
-            continue;
-          }
+        //    continue;
+        //  }
         }
 //        if (issuing_inst->isStore()){
 //        }
+
         int idx = FUPool::NoCapableFU;
         Cycles op_latency = Cycles(1);
         ThreadID tid = issuing_inst->threadNumber;
@@ -970,7 +995,7 @@ InstructionQueue<Impl>::scheduleReadyInsts()
                 count[tid]--;
                 issuing_inst->clearInIQ();
             } else {
-                memDepUnit[tid].issue(issuing_inst);
+                //memDepUnit[tid].issue(issuing_inst);
             }
 
             listOrder.erase(order_it++);

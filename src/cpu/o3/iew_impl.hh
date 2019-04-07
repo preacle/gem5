@@ -532,7 +532,7 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
     <<" seqNum:"<<inst->seqNum
     <<" PREDSSN:"<<inst->pred_ssn
     <<" PREDPC:"<<inst->pred_pc
-    <<" PREDBPS:"<<inst->pred_baypass
+    <<" PREDBPS:"<<inst->pred_bypass
     <<" PREDFWD:"<<inst->pred_forward;
     inst->dump();
     ++memOrderViolationEvents;
@@ -546,6 +546,7 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
     // the squash.
 
     //update pdt
+    /*
     if (inst->numDestRegs() == 1 && inst->bypassSSN != 0){
             uint64_t diffSSN = inst->gSSN - inst->bypassSSN;
             if (inst->diffSSN != inst->gSSN - inst->bypassSSN||!inst->isNoSQ()){
@@ -555,7 +556,7 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
                 cpu->loadPdt.insertLoad(inst->pcState().pc(),
                 0,diffSSN,inst->hist_fullbit);
             }
-    }
+    }*/
     inst->needUpdateSSN = true;
     if (inst->BypassInst){
       inst->BypassInst->clearNeedBypass();
@@ -1352,12 +1353,12 @@ DefaultIEW<Impl>::executeInsts()
                 }
   //              std::cout<<"NOSQ_bypass";inst->dump();
                 fault = ldstQueue.executeLoad(inst);
-
+/*
                 if (inst->BypassInst){
                     instQueue.deferMemInst(inst);
                     continue;
                 }
-
+*/
                 if (inst->isTranslationDelayed() &&
                     fault == NoFault) {
                     // A hw page table walk is currently going on; the

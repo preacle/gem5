@@ -936,7 +936,7 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
                 inst->hist_fullbit = hist_fullbit;
                 cpu->hist_fullbit = hist_fullbit;
                 SRQ.push_front(inst);
-                if (SRQ.size() > 128)
+                if (SRQ.size() > 1024)
                   SRQ.pop_back();
                 //std::cout<<SRQ.size()<<std::endl;
                 storesInProgress[tid]++;
