@@ -520,7 +520,20 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
     <<" preddiffSSN:"
     <<inst->diffSSN
     <<" bypassPC:"
-    <<inst->bypassPC;
+    <<inst->bypassPC
+    <<" hist:"
+    <<inst->hist_fullbit
+    <<" needpdt:"
+    <<inst->needpdt
+    <<" pdt_v:"
+    <<inst->pdt_v
+    <<" maybeBypassSSN:"
+    <<inst->maybeBypassSSN
+    <<" seqNum:"<<inst->seqNum
+    <<" PREDSSN:"<<inst->pred_ssn
+    <<" PREDPC:"<<inst->pred_pc
+    <<" PREDBPS:"<<inst->pred_baypass
+    <<" PREDFWD:"<<inst->pred_forward;
     inst->dump();
     ++memOrderViolationEvents;
     DPRINTF(IEW, "[tid:%i]: Memory violation, squashing violator and younger "
@@ -534,9 +547,14 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
 
     //update pdt
     if (inst->numDestRegs() == 1 && inst->bypassSSN != 0){
-             uint64_t diffSSN = inst->gSSN - inst->bypassSSN;
-            cpu->loadPdt.insertLoad(inst->pcState().pc(),
-            inst->bypassPC,diffSSN,inst->hist_fullbit);
+            uint64_t diffSSN = inst->gSSN - inst->bypassSSN;
+            if (inst->diffSSN != inst->gSSN - inst->bypassSSN||!inst->isNoSQ()){
+                cpu->loadPdt.insertLoad(inst->pcState().pc(),
+                inst->bypassPC,diffSSN,inst->hist_fullbit);
+            }else{
+                cpu->loadPdt.insertLoad(inst->pcState().pc(),
+                0,diffSSN,inst->hist_fullbit);
+            }
     }
     inst->needUpdateSSN = true;
     if (inst->BypassInst){
@@ -566,7 +584,7 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
           toCommit->includeSquashInst[tid] = true;
         }
 
-
+        cpu->reexSSN = inst->gSSN;
         inst->setSquashDueToReexecute();
         wroteToTimeBuffer = true;
     }
@@ -1293,8 +1311,11 @@ DefaultIEW<Impl>::executeInsts()
                 // event adds the instruction to the queue to commit
 
                 // todo
-                inst->isLoadLinked = inst->needDelay;
                 if (inst->isLoadLinked&&inst->SSN > cpu->retireSSN){
+                  instQueue.deferMemInst(inst);
+                  continue;
+                }
+                if (inst->needDelay&&inst->SSN > cpu->reexSSN){
                   instQueue.deferMemInst(inst);
                   continue;
                 }

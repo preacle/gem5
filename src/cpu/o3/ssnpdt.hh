@@ -24,26 +24,26 @@ public:
         bool insert(uint64_t insertTag,uint64_t insertVal,uint64_t insertPC){
             if (v == 1){
                if (tag == insertTag){
-                    if (value == insertVal){
-//			std::cout<<"insert:1"<<std::endl;
+                    if (value == insertVal && insertPC != 0){
+                        // std::cout<<"insert:1"<<std::endl;
                         c = (63 == c)?63:c+1;
                     }
                     else{
-//			std::cout<<"insert:2"<<std::endl;
+                        // std::cout<<"insert:2"<<std::endl;
                         value = insertVal;
                         c = 1;
                     }
 
                     if ( pc == insertPC){
-//			std::cout<<"insert:3"<<std::endl;
-                      pc_c = (63 == pc_c)?63:pc_c+1;
+                        // std::cout<<"insert:3"<<std::endl;
+                      pc_c = (3 == pc_c)?3:pc_c+1;
                     }else{
-//			std::cout<<"insert:4"<<std::endl;
+                        // std::cout<<"insert:4"<<std::endl;
                       pc = insertPC;
                       pc_c = 1;
                     }
                 }else{
-//			std::cout<<"insert:5"<<std::endl;
+                        // std::cout<<"insert:5"<<std::endl;
                     v = 0;
                     //tag = insertTag;
                     //value = insertVal;
@@ -91,7 +91,11 @@ public:
       for (int i=0;i!=sz;i++) table1[i] = new predItem();
     }
     bool insertLoad(uint64_t pc, uint64_t pc_v, uint64_t val,uint64_t history){
-  //      std::cout<<"insert: pc"<<pc<<" pc_v"<<pc_v<<" val"<<val<<" history"<<history<<std::endl;
+        if (val >= 20){
+          return true;
+        }
+
+        // std::cout<<"insert: pc"<<pc<<" pc_v"<<pc_v<<" val"<<val<<" history"<<history<<std::endl;
         uint64_t idx0 = (pc>>1) % PREDSIZE;
         uint64_t tag0 = (pc>>1) / PREDSIZE;
         table0[idx0]->insert(tag0,val,pc_v);
@@ -103,6 +107,7 @@ public:
         return true;
     }
     bool clearLoad(uint64_t pc,uint64_t history){
+      // std::cout<<"clearLoad  pc: "<<pc<<" history"<<history;
       uint64_t idx0 = (pc>>1) % PREDSIZE;
       uint64_t tag0 = (pc>>1) / PREDSIZE;
       table0[idx0]->clear(tag0);
@@ -120,7 +125,7 @@ public:
       uint64_t& val,
       uint64_t& c,
       bool& delay){
-//         std::cout<<"getSSN:pc"<<pc<<" :gssn"<<gssn<<std::endl;
+         // std::cout<<"getSSN:pc"<<pc<<" :gssn"<<gssn<<std::endl;
         uint64_t idx0 = (pc>>1) % PREDSIZE;
         uint64_t tag0 = (pc>>1) / PREDSIZE;
 
@@ -131,7 +136,7 @@ public:
         uint64_t idx1 = ((pc>>1)^(pc>>9)^history)% PREDSIZE;
         uint64_t tag1 = ((pc)^(pc>>11)^history)% PREDSIZE;
         if (table0[idx0]->tag != tag0 && table1[idx1]->tag != tag1){
-  //          std::cout<<"getSSN:pc"<<pc<<"miss"<<std::endl;
+            // std::cout<<"getSSN:pc"<<pc<<"miss"<<std::endl;
             return false;
         }
         if (table1[idx1]->tag == tag1){
@@ -141,19 +146,20 @@ public:
           }
           pc_tag = trueIdx/PREDSIZE;
           pc_idx = trueIdx%PREDSIZE;
- //         std::cout<<"getSSN:pc"<<pc<<" pc_c:"<<table1[idx1]->pc_c
- //         <<" c:"<<table1[idx1]->c
- //         <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
- //         <<" valid:"<<pclink[pc_idx][0]
-  //        <<" 3:"<<(gssn >= pclink[pc_idx][2])<<std::endl;
+          // std::cout<<"getSSN:pc"<<pc<<" pc_c:"<<table1[idx1]->pc_c
+          // <<" c:"<<table1[idx1]->c
+          // <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
+          // <<" valid:"<<pclink[pc_idx][0]
+         // <<" 3:"<<(gssn >= pclink[pc_idx][2])<<std::endl;
           if (table1[idx1]->pc_c > table1[idx1]->c
             && pclink[pc_idx][0] && pclink[pc_idx][1] == pc_tag
             &&  gssn >= pclink[pc_idx][2]){
+            delay = true;
             val = gssn - pclink[pc_idx][2];
- //           std::cout<<"getSSN:pc"
- //           <<pc<<" :idx"<<trueIdx<<" validTag"
- //           <<(pclink[pc_idx][1] == pc_tag)
- //           <<" value:"<<val<<std::endl;
+            // std::cout<<"getSSN:pc"
+            // <<pc<<" :idx"<<trueIdx<<" validTag"
+            // <<(pclink[pc_idx][1] == pc_tag)
+            // <<" value:"<<val<<std::endl;
             if (val < maxBypassDist){
               c = table1[idx1]->pc_c;
               return true;
@@ -161,7 +167,7 @@ public:
           }
           val = table1[idx1]->value;
           c = table1[idx1]->c;
-          return table1[idx1]->v;
+          return true;
         }
         else{
           trueIdx = table0[idx0]->pc;
@@ -170,18 +176,19 @@ public:
           }
           pc_tag = trueIdx/PREDSIZE;
           pc_idx = trueIdx%PREDSIZE;
-  //        std::cout<<"getSSN:pc"<<pc<<" pc_c:"<<table0[idx1]->pc_c
-  //        <<" c:"<<table0[idx1]->c
-  //        <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
-  //        <<" valid:"<<pclink[pc_idx][0]
-  //        <<" 3:"<<(gssn >= pclink[pc_idx][2])<<std::endl;
+          // std::cout<<"getSSN:pc"<<pc<<" pc_c:"<<table0[idx1]->pc_c
+          // <<" c:"<<table0[idx1]->c
+          // <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
+          // <<" valid:"<<pclink[pc_idx][0]
+          // <<" 3:"<<(gssn >= pclink[pc_idx][2])<<std::endl;
           if (table0[idx0]->pc_c > table0[idx0]->c
             && pclink[pc_idx][0] && pclink[pc_idx][1] == pc_tag
             &&  gssn >= pclink[pc_idx][2]){
- //           std::cout<<"getSSN:pc"<<pc
- //           <<"trueIdx"<<trueIdx
- //           <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
- //           <<" value:"<<val<<std::endl;
+            delay = true;
+            // std::cout<<"getSSN:pc"<<pc
+            // <<"trueIdx"<<trueIdx
+            // <<" validTag:"<<(pclink[pc_idx][1] == pc_tag)
+            // <<" value:"<<val<<std::endl;
             val = gssn - pclink[pc_idx][2];
             if (val < maxBypassDist){
               c = table0[idx0]->pc_c;
@@ -190,7 +197,7 @@ public:
           }
           val = table0[idx0]->value;
           c = table0[idx0]->c;
-          return table0[idx0]->v;
+          return true;
         }
     }
     void insertStore(uint64_t trueIdx,uint64_t ssn){

@@ -648,6 +648,17 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
 
     assert(!inst->isSquashed());
 
+    if (inst->isExecuted()){
+    DPRINTF(LSQUnit, "Executing bypassed load PC %s, [sn:%lli]\n",
+            inst->pcState(), inst->seqNum);
+  //  if (inst->isNoSQ()&&inst->bpeffAddr == 0){ //
+  //      inst->setNeedReexecute();
+  //  }
+  //  inst->setNeedReexecute();
+    iewStage->instToCommit(inst);
+    iewStage->activityThisCycle();
+    return load_fault;
+  }
     // set SSN
     if (inst->isLVP()){
       cpu->load_nums++;
@@ -659,14 +670,14 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
       inst->readInCache= true;
       inst->setNeedBypass();
     }
-
+    //todo LLSC
     load_fault = inst->initiateAcc();
     if (!inst->isNeedBypass()&&inst->isTranslationDelayed() &&
         load_fault == NoFault)
         return load_fault;
 
-    if (inst->readInCache||true){
-      uint64_t idx = (inst->effAddr >> 3)%512;
+    if ((inst->readInCache||true)&&(!inst->isLoadLinked)){
+      uint64_t idx = (inst->effAddr)%512;
       uint64_t gssn = vioMap[idx];
       int ssqidx = -1;
       if (cpu->rename.SRQ.size() != 0){
@@ -674,25 +685,32 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
         ssqidx = gssn - base;
       }
       if (ssqidx >=0 && ssqidx < cpu->rename.SRQ.size()){
-
         auto maybeBypassInst = cpu->rename.SRQ[ssqidx];
+        if (inst->gSSN < maybeBypassInst->gSSN){
+          std::cout<<"too later:";inst->dump();
+        }
         if (maybeBypassInst->effAddr <= inst->effAddr
           && inst->effAddr - maybeBypassInst->effAddr + inst->effSize
           <= maybeBypassInst->effSize&&inst->gSSN >= maybeBypassInst->gSSN){
             if (inst->maybeBypassSSN != maybeBypassInst->SSN){
-      //      std::cout<<"first bypass:"<<maybeBypassInst->effAddr;maybeBypassInst->dump();
+            std::cout<<"change bypass:"<<inst->diffSSN<<" "<<inst->gSSN-maybeBypassInst->gSSN;maybeBypassInst->dump();
             inst->SSN = maybeBypassInst->SSN;
+                  inst->diffSSN = inst->gSSN - maybeBypassInst->SSN;
             inst->maybeBypassSSN = maybeBypassInst->SSN;
             inst->BypassInst = maybeBypassInst;
             maybeBypassInst->setNeedBypass();
             inst->readInCache = false;
+            inst->pred_baypass = true;
      //       std::cout<<"first bypass:"<<maybeBypassInst->effAddr;maybeBypassInst->dump();
             return NoFault;
           }
         }
       }
-      if (inst->readInCache)
-          inst->clearNeedBypass();
+      if (inst->maybeBypassSSN == 0||inst->isLoadLinked){
+        inst->clearNeedBypass();
+        inst->pred_forward = true;
+      }
+
     }
     // If the instruction faulted or predicated false, then we need to send it
     // along to commit without the instruction completing.
@@ -890,8 +908,9 @@ LSQUnit<Impl>::executeStore(DynInstPtr &store_inst)
         ++storesToWB;
     }
     std::cout<<"executeStore:"<<store_inst->effAddr;store_inst->dump();
-    uint64_t idx = (store_inst->effAddr >> 3)%512;
-    vioMap[idx] = store_inst->gSSN;
+    uint64_t idx = (store_inst->effAddr)%512;
+    if (store_inst->gSSN > vioMap[idx])
+      vioMap[idx] = store_inst->gSSN;
 
     return store_fault;
     //return checkViolations(load_idx, store_inst);
@@ -1355,7 +1374,8 @@ LSQUnit<Impl>::writeback(DynInstPtr &inst, PacketPtr pkt)
             std::cout<<"squashDueToMemOrder::ReexecuteLoad WB::SMP"
               <<std::endl;
             */
-          iewStage->squashDueToMemOrder(inst,inst->threadNumber);
+          if (!inst->isReexecuted())
+            iewStage->squashDueToMemOrder(inst,inst->threadNumber);
           return;
         }
         inst->setReexecuted();

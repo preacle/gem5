@@ -764,10 +764,12 @@ class FullO3CPU : public BaseO3CPU
     InstSeqNum globalSeqNum;//[Impl::MaxThreads];
 
     /* The global store sequence number counter */
-    StoreSeqNum globalSSN;
+    StoreSeqNum globalSSN = 0;
+
+    StoreSeqNum reexSSN = 0;
 
     /* The global store sequence number counter */
-    StoreSeqNum retireSSN;
+    StoreSeqNum retireSSN = 0;
     /** Pointer to the checker, which can dynamically verify
      * instruction results at run time.  This can be set to NULL if it
      * is not being used.

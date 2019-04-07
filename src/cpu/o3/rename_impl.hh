@@ -378,7 +378,6 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
   dest->SSN = src->SSN;
   RenameMap *map = renameMap[tid];
 
-
   /*ARM ONLY*/
   //ThreadContext *tcSrc = dest->tcBase();
 //  const RegId&  src_reg = src->srcRegIdx(5);
@@ -427,15 +426,16 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
                       rename_result.second);
   ++renameRenamedOperands;
 
-  if (dest->isLoadLinked||dest->needDelay){
+  if (dest->isLoadLinked){
     return;
   }
 
   dest->setNeedBypass();
+  dest->maybeBypassSSN = src->SSN;
   if (src->readyToCommit()
     &&src->v_saved_value != 0
     &&!src->isStoreConditional()){
-    if (dest->needpdt >= 63 && src->effSize && src->effSize == dest->effSize){
+    if (dest->needpdt >= 15 && src->effSize && src->effSize == dest->effSize){
       auto value = src->saved_value;
       dest->setExecuted();
       dest->bpeffSize = src->effSize;
@@ -910,14 +910,14 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
           &&!inst->isWriteBarrier()){
           inst->pdt_v = cpu->loadPdt.getSSN(inst->pcState().pc(),inst->gSSN,
            inst->hist_fullbit,inst->diffSSN, inst->needpdt,inst->needDelay);
-           std::cout<<"pred:"<<inst->diffSSN<<" gssn:"<<inst->gSSN;inst->dump();
-        for (int i=0;i<SRQ.size();i++){
-            std::cout<<" SRQ:"<<SRQ[i]->gSSN<<" SSN:"<<SRQ[i]->SSN<<" ";SRQ[i]->dump();
-        }
-      //    instruction->lvp_v = cpu->lvp.getValue(thisPC.pc(),
-      //      instruction->predValue, instruction->needlvp);
-        //  instruction->sap_v = cpu->sap.getValue(thisPC.pc(),
-        //    instruction->predAddr ,instruction->needsap);
+           std::cout<<"pred:"<<inst->diffSSN<<" gssn:"<<inst->gSSN<<" hist:"<<inst->hist_fullbit<<" seqNum:"<<inst->seqNum;inst->dump();
+    //    for (int i=0;i<SRQ.size();i++){
+            // std::cout<<" SRQ:"<<SRQ[i]->gSSN<<" SSN:"<<SRQ[i]->SSN<<" ";SRQ[i]->dump();
+        // }
+          // instruction->lvp_v = cpu->lvp.getValue(thisPC.pc(),
+            // instruction->predValue, instruction->needlvp);
+          // instruction->sap_v = cpu->sap.getValue(thisPC.pc(),
+            // instruction->predAddr ,instruction->needsap);
 
         }
         if (inst->isStore()) {
@@ -928,8 +928,10 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
                 }
                 uint64_t hist_fullbit = cpu->hist_fullbit;
                 hist_fullbit ^= inst->pcState().pc() >> 1;
-                if (SRQ.size() >= 16){
-                  hist_fullbit ^= SRQ[15]->pcState().pc() >> 1;
+                if (SRQ.size() >= 8){
+                  hist_fullbit ^= SRQ[7]->pcState().pc() >> 1;
+                }else{
+                  std::cout<<"warning TODO"<<std::endl;
                 }
                 inst->hist_fullbit = hist_fullbit;
                 cpu->hist_fullbit = hist_fullbit;
@@ -963,13 +965,13 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
     //v_saved_value!=0&& SRQ[dssn]->effSize==0){
     //      inst->pdt_v = 0;
     //    }
-        if (inst->sap_v&&(inst->needsap < 31 ||! cpu->l0.
-          getValue(inst->predAddr,inst->predValue,inst->SSN,inst->effSize)))
-                inst->sap_v = 0;
+      //  if (inst->sap_v&&(inst->needsap < 31 ||! cpu->l0.
+      //    getValue(inst->predAddr,inst->predValue,inst->SSN,inst->effSize)))
+      //          inst->sap_v = 0;
 
         if (inst->pdt_v && inst->needpdt >= 1 && inst->numDestRegs() == 1){
             //std::cout<<"NoSq:";inst->dump();
-            auto bypassLoad = SRQ[dssn];;
+            auto bypassLoad = SRQ[dssn];
             renameSrcRegs(inst, inst->threadNumber);
             mergeInsts(inst, bypassLoad, tid);
             bypassLoad->setNoSQ();
@@ -979,24 +981,25 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
           //    i->dump();
             cpu->num_nosq++;
         }
-        else if (inst->sap_v &&
-            inst->needsap >= 63 &&inst->numDestRegs() == 1){
-            inst->setNeedBypass();
-            inst->setSAP();
-            renameSrcRegs(inst, inst->threadNumber);
-            renameDestRegs(inst, inst->threadNumber);
-            std::cout<<"SAP :";inst->dump();
-            cpu->num_sap++;
-        }
-        else if (inst->lvp_v &&
-            inst->needlvp >= 63 && inst->numDestRegs() == 1){
-          inst->setNeedBypass();
-          inst->setLVP();
-          renameSrcRegs(inst, inst->threadNumber);
-          renameDestRegs(inst, inst->threadNumber);
-          std::cout<<"LVP :";inst->dump();
-          cpu->num_lvp++;
-        }else{
+    //    else if (inst->sap_v &&
+            // inst->needsap >= 63 &&inst->numDestRegs() == 1){
+            // inst->setNeedBypass();
+            // renameSrcRegs(inst, inst->threadNumber);
+            // inst->setSAP();
+            // renameDestRegs(inst, inst->threadNumber);
+            // std::cout<<"SAP :";inst->dump();
+            // cpu->num_sap++;
+        // }
+        // else if (inst->lvp_v &&
+            // inst->needlvp >= 63 && inst->numDestRegs() == 1){
+            // inst->setNeedBypass();
+            // inst->setLVP();
+          // renameSrcRegs(inst, inst->threadNumber);
+          // renameDestRegs(inst, inst->threadNumber);
+          // std::cout<<"LVP :";inst->dump();
+          // cpu->num_lvp++;
+        // }
+        else{
           if (inst->isLoad())
             inst->clearNeedBypass();
           renameSrcRegs(inst, inst->threadNumber);

@@ -820,7 +820,6 @@ InstructionQueue<Impl>::scheduleReadyInsts()
         assert(!readyInsts[op_class].empty());
 
         DynInstPtr issuing_inst = readyInsts[op_class].top();
-
         if (issuing_inst->isFloating()) {
             fpInstQueueReads++;
         } else if (issuing_inst->isVector()) {
@@ -847,7 +846,53 @@ InstructionQueue<Impl>::scheduleReadyInsts()
 
             continue;
         }
+        /* delay inst*/
+        if (issuing_inst->isStore()){
+          std::cout<<issuing_inst->SSN<<" store:inst";issuing_inst->dump();
+        }
+        if (issuing_inst->isLoad()){
+      //    if (issuing_inst->isExecuted()){
+          //if (issuing_inst->isNoSQ()){ //
+          //    issuing_inst->setNeedReexecute();
+          //}
+        //  inst->setNeedReexecute();
+      //    cpu->iew.instToCommit(issuing_inst);
+      //    cpu->iew.activityThisCycle();
+          //ThreadID tid = issuing_inst->threadNumber;
+          //memDepUnit[tid].issue(issuing_inst);
+      //    listOrder.erase(order_it++);
+      //    continue;
+      //  }
+        //  std::cout<<"reex:"<<cpu->reexSSN<<" ret:"<<cpu->retireSSN<<std::endl;
+        //  std::cout<<issuing_inst->SSN<<std::endl;
+          if (issuing_inst->isLoadLinked&&issuing_inst->SSN > cpu->retireSSN){
+              order_it++;
+              //deferMemInst(issuing_inst);
+              continue;
+          }
+          if (issuing_inst->needDelay){
+            issuing_inst->pred_pc = true;
+          }
+          if (issuing_inst->needDelay&&issuing_inst->SSN > cpu->reexSSN){
 
+            order_it++;
+            //deferMemInst(issuing_inst);
+            continue;
+          }
+
+          if (issuing_inst->BypassInst&&!issuing_inst->BypassInst->readyToCommit()){
+            issuing_inst ->pred_ssn = true;
+            order_it++;
+            continue;
+          }
+          if (issuing_inst->gSSN > cpu->reexSSN + 20){
+            order_it++;
+            //deferMemInst(issuing_inst);
+            continue;
+          }
+        }
+//        if (issuing_inst->isStore()){
+//        }
         int idx = FUPool::NoCapableFU;
         Cycles op_latency = Cycles(1);
         ThreadID tid = issuing_inst->threadNumber;
@@ -1179,6 +1224,14 @@ InstructionQueue<Impl>::getDeferredMemInstToExecute()
            //delay Bypass SSN for llsc
         if ((*it)->isLoadLinked){
           if ((*it)->SSN <= cpu->retireSSN){
+            DynInstPtr mem_inst = *it;
+            deferredMemInsts.erase(it);
+            return mem_inst;
+          }
+            continue;
+        }
+        if ((*it)->needDelay){
+          if ((*it)->SSN <= cpu->reexSSN){
             DynInstPtr mem_inst = *it;
             deferredMemInsts.erase(it);
             return mem_inst;

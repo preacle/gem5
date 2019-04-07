@@ -549,6 +549,7 @@ ROB<Impl>::doReexcute(ThreadID tid)
             cpu->SVWFilter.insert(inst);
           }
            inst->setReexecuted();
+           cpu->reexSSN = inst->gSSN;
          return;
        }
 

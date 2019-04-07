@@ -152,6 +152,12 @@ class BaseDynInst : public ExecContext, public RefCounted
 
   public:
     bool readInCache = false;
+
+    bool pred_ssn = false;
+    bool pred_pc = false;
+    bool pred_baypass = false;
+    bool pred_forward = false;
+
     uint64_t intResult = 0;
     bool isUint = false;
     uint64_t hist = 0;
