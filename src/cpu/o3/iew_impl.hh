@@ -529,6 +529,8 @@ DefaultIEW<Impl>::squashDueToMemOrder(DynInstPtr &inst, ThreadID tid)
     <<inst->pdt_v
     <<" maybeBypassSSN:"
     <<inst->maybeBypassSSN
+    <<"isBypassed"
+    <<inst->isBypassed()
     <<" seqNum:"<<inst->seqNum
     <<" PREDSSN:"<<inst->pred_ssn
     <<" PREDPC:"<<inst->pred_pc
@@ -1312,7 +1314,7 @@ DefaultIEW<Impl>::executeInsts()
                 // event adds the instruction to the queue to commit
 
                 // todo
-                if (inst->isLoadLinked&&inst->SSN > cpu->retireSSN){
+                if (inst->delayUntilCommit&&inst->SSN > cpu->retireSSN){
                   instQueue.deferMemInst(inst);
                   continue;
                 }

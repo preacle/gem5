@@ -427,6 +427,7 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
   ++renameRenamedOperands;
 
   if (dest->isLoadLinked){
+    dest->delayUntilCommit  = true;
     return;
   }
 
@@ -909,11 +910,12 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
           &&!inst->isSquashed()&&!inst->isMemBarrier()
           &&!inst->isWriteBarrier()){
           inst->pdt_v = cpu->loadPdt.getSSN(inst->pcState().pc(),inst->gSSN,
-           inst->hist_fullbit,inst->diffSSN, inst->needpdt,inst->needDelay);
-           std::cout<<"pred:"<<inst->diffSSN<<" gssn:"<<inst->gSSN<<" hist:"<<inst->hist_fullbit<<" seqNum:"<<inst->seqNum;inst->dump();
-    //    for (int i=0;i<SRQ.size();i++){
-            // std::cout<<" SRQ:"<<SRQ[i]->gSSN<<" SSN:"<<SRQ[i]->SSN<<" ";SRQ[i]->dump();
-        // }
+           inst->hist_fullbit,inst->diffSSN, inst->needpdt,inst->needDelay,
+           inst->delayUntilCommit);
+        //   std::cout<<"pred:"<<inst->diffSSN<<" gssn:"<<inst->gSSN<<" hist:"<<inst->hist_fullbit<<" seqNum:"<<inst->seqNum;inst->dump();
+      //  for (int i=0;i<SRQ.size();i++){
+      //       std::cout<<" SRQ:"<<SRQ[i]->gSSN<<" SSN:"<<SRQ[i]->SSN<<" ";SRQ[i]->dump();
+      //   }
           // instruction->lvp_v = cpu->lvp.getValue(thisPC.pc(),
             // instruction->predValue, instruction->needlvp);
           // instruction->sap_v = cpu->sap.getValue(thisPC.pc(),
@@ -936,7 +938,7 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
                 inst->hist_fullbit = hist_fullbit;
                 cpu->hist_fullbit = hist_fullbit;
                 SRQ.push_front(inst);
-                if (SRQ.size() > 1024)
+                if (SRQ.size() > 128)
                   SRQ.pop_back();
                 //std::cout<<SRQ.size()<<std::endl;
                 storesInProgress[tid]++;

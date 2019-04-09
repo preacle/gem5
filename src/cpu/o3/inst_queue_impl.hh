@@ -868,7 +868,8 @@ InstructionQueue<Impl>::scheduleReadyInsts()
 
         //  std::cout<<"reex:"<<cpu->reexSSN<<" ret:"<<cpu->retireSSN<<std::endl;
         //  std::cout<<issuing_inst->SSN<<std::endl;
-          if (issuing_inst->isLoadLinked&&issuing_inst->SSN > cpu->retireSSN){
+
+          if (issuing_inst->delayUntilCommit&&issuing_inst->SSN > cpu->retireSSN){
             readyInsts[op_class].pop();
             if (!readyInsts[op_class].empty()) {
                 moveToYoungerInst(order_it);
@@ -909,11 +910,18 @@ InstructionQueue<Impl>::scheduleReadyInsts()
              deferMemInst(issuing_inst);
              continue;
            }
-        //  if (issuing_inst->gSSN > cpu->reexSSN + 30){
-        //    order_it++;
-            //deferMemInst(issuing_inst);
-        //    continue;
-        //  }
+          if (issuing_inst->gSSN > cpu->reexSSN + 30){
+            readyInsts[op_class].pop();
+            if (!readyInsts[op_class].empty()) {
+                moveToYoungerInst(order_it);
+            } else {
+                readyIt[op_class] = listOrder.end();
+                queueOnList[op_class] = false;
+            }
+            listOrder.erase(order_it++);
+            deferMemInst(issuing_inst);
+            continue;
+          }
         }
 //        if (issuing_inst->isStore()){
 //        }
@@ -1247,7 +1255,7 @@ InstructionQueue<Impl>::getDeferredMemInstToExecute()
     for (ListIt it = deferredMemInsts.begin(); it != deferredMemInsts.end();
          ++it) {
            //delay Bypass SSN for llsc
-        if ((*it)->isLoadLinked){
+        if ((*it)->delayUntilCommit){
           if ((*it)->SSN <= cpu->retireSSN){
             DynInstPtr mem_inst = *it;
             deferredMemInsts.erase(it);
@@ -1255,6 +1263,7 @@ InstructionQueue<Impl>::getDeferredMemInstToExecute()
           }
             continue;
         }
+
         if ((*it)->needDelay){
           if ((*it)->SSN <= cpu->reexSSN){
             DynInstPtr mem_inst = *it;
@@ -1277,6 +1286,12 @@ InstructionQueue<Impl>::getDeferredMemInstToExecute()
             deferredMemInsts.erase(it);
             return mem_inst;
         }
+        if ((*it)->gSSN<= cpu->reexSSN+30){
+            DynInstPtr mem_inst = *it;
+            deferredMemInsts.erase(it);
+            return mem_inst;
+        }
+
     }
     return nullptr;
 }

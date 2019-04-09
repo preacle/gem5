@@ -167,7 +167,7 @@ class BaseDynInst : public ExecContext, public RefCounted
     bool pdt_v = false;
 
     bool isLoadLinked = false;
-
+    bool delayUntilCommit = false;
     bool blockInReex = false;
 
     uint64_t needlvp = 0;

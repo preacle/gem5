@@ -677,12 +677,18 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
         return load_fault;
       }
     if ((inst->readInCache||true)&&(!inst->isLoadLinked)){
-      uint64_t idx = (inst->effAddr)%512;
+      uint64_t idx = (inst->effAddr>>3)%512;
       uint64_t gssn = vioMap[idx];
       int ssqidx = -1;
       if (cpu->rename.SRQ.size() != 0){
         uint64_t base = cpu->rename.SRQ[0]->gSSN;
-        ssqidx = gssn - base;
+        ssqidx = base-ssqidx;
+      }
+      if (ssqidx >=0 && ssqidx < cpu->rename.SRQ.size()&&gssn != cpu->rename.SRQ[ssqidx]->gSSN){
+        for (int i=0;i<cpu->rename.SRQ.size();i++){
+          std::cout<<" SSQ_err:"<<cpu->rename.SRQ[i]->gSSN;
+          cpu->rename.SRQ[ssqidx]->dump();
+        }
       }
       if (ssqidx >=0 && ssqidx < cpu->rename.SRQ.size()){
         auto maybeBypassInst = cpu->rename.SRQ[ssqidx];
@@ -693,7 +699,16 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
           && inst->effAddr - maybeBypassInst->effAddr + inst->effSize
           <= maybeBypassInst->effSize&&inst->gSSN >= maybeBypassInst->gSSN){
             if (inst->maybeBypassSSN != maybeBypassInst->SSN){
-            std::cout<<"change bypass:"<<inst->diffSSN<<" "<<inst->gSSN-maybeBypassInst->gSSN;maybeBypassInst->dump();
+            std::cout<<"change bypass:pred"<<inst->diffSSN
+            <<" effAddr1:"<<maybeBypassInst->effAddr
+            <<" effAddr2:"<<inst->effAddr
+            <<" effSize1:"<<maybeBypassInst->effSize
+            <<" effSize2:"<<inst->effSize
+            <<" "<<inst->gSSN-maybeBypassInst->gSSN
+            <<" SSN"<<inst->gSSN
+            <<" bpgssnInVio"<<gssn
+            <<" idx:"<<idx<<" ";
+            inst->dump();
             inst->SSN = maybeBypassInst->SSN;
                   inst->diffSSN = inst->gSSN - maybeBypassInst->SSN;
             inst->readInCache = false;
@@ -937,9 +952,13 @@ LSQUnit<Impl>::executeStore(DynInstPtr &store_inst)
         ++storesToWB;
     }
     std::cout<<"executeStore:"<<store_inst->effAddr;store_inst->dump();
-    uint64_t idx = (store_inst->effAddr)%512;
-    if (store_inst->gSSN > vioMap[idx])
+    uint64_t idx = (store_inst->effAddr >> 3)%512;
+    if (store_inst->gSSN > vioMap[idx]){
       vioMap[idx] = store_inst->gSSN;
+      std::cout<<"vioMap:insert"<<idx<<" gssn:"<<store_inst->gSSN;
+      store_inst->dump();
+    }
+
 
     return store_fault;
     //return checkViolations(load_idx, store_inst);

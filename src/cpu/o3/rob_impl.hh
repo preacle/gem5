@@ -541,11 +541,10 @@ ROB<Impl>::doReexcute(ThreadID tid)
        ||inst->isSquashed()){
          return;
        }
-
        if (inst->isStore()){
          //if (needSquash)
          // return;
-          if (inst->readPredicate()&&inst->effSize!=0){
+          if (inst->readPredicate()&&inst->effSize!=0&&!inst->isReexecuted()){
             cpu->SVWFilter.insert(inst);
           }
            inst->setReexecuted();
