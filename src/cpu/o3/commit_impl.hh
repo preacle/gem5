@@ -1438,6 +1438,11 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
     // If this was a store, record it for this cycle.
     if (head_inst->isStore())
         committedStores[tid] = true;
+    std::cout<<curTick()
+             <<"|"<<head_inst->commitTick
+             <<"|"<<head_inst->delayUntilCommit
+             <<"|";
+    head_inst->dump();
 
     // Return true to indicate that we have committed an instruction.
     return true;

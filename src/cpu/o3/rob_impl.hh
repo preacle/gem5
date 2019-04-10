@@ -506,7 +506,7 @@ ROB<Impl>::doReexcuteInst(ThreadID tid, DynInstPtr inst){
   //    return ;
   //  }
     Fault load_fault = NoFault;
-
+    std::cout<<"doreex:";inst->dump();
   //  std::cout<<inst->seqNum<<" ";inst->dump();
     inst->translationStarted(false);
     inst->translationCompleted(false);
@@ -541,6 +541,19 @@ ROB<Impl>::doReexcute(ThreadID tid)
        ||inst->isSquashed()){
          return;
        }
+
+       if (inst->isStore()){
+          if (!inst->isReexecuted()){
+            if (cpu->SVWFilter.insert(inst)){
+              inst->setReexecuted();
+              cpu->reexSSN = inst->gSSN;
+            } else{
+              return ;
+            }
+          }
+          continue;
+       }
+/*
        if (inst->isStore()){
          //if (needSquash)
          // return;
@@ -551,7 +564,7 @@ ROB<Impl>::doReexcute(ThreadID tid)
            cpu->reexSSN = inst->gSSN;
          return;
        }
-
+*/
        if (inst->isNonSpeculative()||inst->isMemBarrier()
           ||inst->isWriteBarrier()){
          inst->setReexecuted();

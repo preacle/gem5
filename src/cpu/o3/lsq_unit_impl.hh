@@ -739,6 +739,7 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
       inst->clearNeedBypass();
       inst->pred_forward = true;
       inst->SSN  = cpu->getRetireSSN();
+      std::cout<<"LLSC ssn:"<<inst->SSN<<std::endl;
       inst->translationStarted(false);
       inst->translationCompleted(false);
       load_fault = inst->initiateAcc();
@@ -774,7 +775,6 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
         iewStage->instToCommit(inst);
         iewStage->activityThisCycle();
     } else {
-
         cpu->load_nums++;
         //assert(inst->_effAddr);
         int load_idx = inst->lqIdx;

@@ -40,20 +40,22 @@ public:
         svwItems[key].push_front(svwItem(true,tag,ssn,pc));
     }
 
-    void insert(DynInstPtr &inst){
-      //std::cout<<"insert SVW:"<<inst->gSSN<<" ";inst->dump();
+    bool insert(DynInstPtr &inst){
+//      std::cout<<"insert SVW:"<<inst->gSSN<<" "<<inst->effAddr<<" "<<inst->effSize;inst->dump();
       if (inst->effAddr == 0||inst->effSize == 0)
-        return;
+        return false;
       auto inst_eff_addr1 = inst->effAddr >> depCheckShift;
       auto inst_eff_addr2 =
         (inst->effAddr + inst->effSize - 1) >> depCheckShift;
       for (auto addr = inst_eff_addr1; addr <= inst_eff_addr2; addr++){
+//        std::cout<<"insert SVW:addr"<<addr<<std::endl;
         SVWKey_t key = addr % size;
         SVWTag_t tag = addr / size;
         uint64_t trueIdx = inst->pcState().pc();
         //((inst->pcState().pc() >> 1)<<4)+inst->microPC()%16;
         insert(key,tag,inst->SSN,trueIdx);
       }
+        return true;
     }
 
     pair<SVWStoreSeqNum_t,uint64_t> search(SVWKey_t key,SVWTag_t tag){

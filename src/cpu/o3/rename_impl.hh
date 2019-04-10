@@ -427,6 +427,7 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
   ++renameRenamedOperands;
 
   if (dest->isLoadLinked){
+    std::cout<<"ll:";dest->dump();
     dest->delayUntilCommit  = true;
     return;
   }
