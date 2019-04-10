@@ -65,7 +65,7 @@ public:
                v = 1;
                if (value == insertVal && insertPC != 0){
                    // std::cout<<"insert:1"<<std::endl;
-                   c = (63 == c)?63:c+1;
+                   c = (8 == c)?8:c+1;
                }
                else{
                    // std::cout<<"insert:2"<<std::endl;
@@ -75,7 +75,7 @@ public:
 
                if ( pc == insertPC){
                    // std::cout<<"insert:3"<<std::endl;
-                 pc_c = (3 == pc_c)?3:pc_c+1;
+                 pc_c = (4 == pc_c)?4:pc_c+1;
                }else{
                    // std::cout<<"insert:4"<<std::endl;
                  pc = insertPC;

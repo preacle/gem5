@@ -232,6 +232,11 @@ class LSQUnit {
     /** Handles doing the retry. */
     void recvRetry();
 
+    bool checkMemVio(uint64_t src,uint64_t src_size,uint64_t dest,uint64_t dest_size){
+      if (dest < src)
+        return checkMemVio(dest,dest_size,src,src_size);
+      return src+src_size-1 >= dest;
+    }
   private:
     /** Reset the LSQ state */
     void resetState();

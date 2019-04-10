@@ -170,6 +170,8 @@ class BaseDynInst : public ExecContext, public RefCounted
     bool delayUntilCommit = false;
     bool blockInReex = false;
 
+    bool haveVio = false;
+
     uint64_t needlvp = 0;
     bool lvp_v = false;
 

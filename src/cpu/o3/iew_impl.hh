@@ -1361,6 +1361,10 @@ DefaultIEW<Impl>::executeInsts()
                     continue;
                 }
 */
+              if (inst->delayUntilCommit&&inst->SSN > cpu->retireSSN){
+                  instQueue.deferMemInst(inst);
+                  continue;
+                }
                 if (inst->isTranslationDelayed() &&
                     fault == NoFault) {
                     // A hw page table walk is currently going on; the

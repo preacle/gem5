@@ -913,6 +913,7 @@ DefaultRename<Impl>::renameInsts(ThreadID tid)
           inst->pdt_v = cpu->loadPdt.getSSN(inst->pcState().pc(),inst->gSSN,
            inst->hist_fullbit,inst->diffSSN, inst->needpdt,inst->needDelay,
            inst->delayUntilCommit);
+        inst->delayUntilCommit = false;
         //   std::cout<<"pred:"<<inst->diffSSN<<" gssn:"<<inst->gSSN<<" hist:"<<inst->hist_fullbit<<" seqNum:"<<inst->seqNum;inst->dump();
       //  for (int i=0;i<SRQ.size();i++){
       //       std::cout<<" SRQ:"<<SRQ[i]->gSSN<<" SSN:"<<SRQ[i]->SSN<<" ";SRQ[i]->dump();

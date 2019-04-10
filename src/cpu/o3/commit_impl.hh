@@ -1195,7 +1195,8 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
         &&head_inst->numDestRegs() == 1
         && head_inst->bypassPC != 0
         && head_inst->needUpdateSSN
-        && head_inst->gSSN - head_inst->bypassSSN == head_inst->diffSSN){
+        && head_inst->gSSN - head_inst->bypassSSN == head_inst->diffSSN
+        ){
           uint64_t diffSSN = head_inst->gSSN - head_inst->bypassSSN;
           cpu->loadPdt.delay(head_inst->pcState().pc(),
           head_inst->bypassPC,diffSSN,head_inst->hist_fullbit);
@@ -1205,8 +1206,13 @@ DefaultCommit<Impl>::commitHead(DynInstPtr &head_inst, unsigned inst_num)
           //&& !head_inst->needUpdateSSN
         ){
               uint64_t diffSSN = head_inst->gSSN - head_inst->bypassSSN;
-              cpu->loadPdt.insertLoad(head_inst->pcState().pc(),
-              head_inst->bypassPC,diffSSN,head_inst->hist_fullbit);
+              if (!head_inst->needUpdateSSN && head_inst->haveVio){
+                cpu->loadPdt.delay(head_inst->pcState().pc(),
+                head_inst->bypassPC,diffSSN,head_inst->hist_fullbit);
+              }else{
+                cpu->loadPdt.insertLoad(head_inst->pcState().pc(),
+                head_inst->bypassPC,diffSSN,head_inst->hist_fullbit);
+              }
         }else if (head_inst->isLoad()
            &&head_inst->numDestRegs() == 1
            && head_inst->bypassPC == 0

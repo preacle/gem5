@@ -856,5 +856,4 @@ class FullO3CPU : public BaseO3CPU
     Stats::Scalar miscRegfileReads;
     Stats::Scalar miscRegfileWrites;
 };
-
 #endif // __CPU_O3_CPU_HH__

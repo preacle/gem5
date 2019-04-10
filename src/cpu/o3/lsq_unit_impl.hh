@@ -883,6 +883,14 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
 //已经消除了需要bypass的可能,
 //所以需要执行另一半.于是从头开始执行.
               inst->clearNeedBypass();
+              if (this->checkMemVio(inst->effAddr,inst->effSize,inst->bpeffAddr,inst->bpeffSize)){
+                inst->haveVio = true;
+                inst->delayUntilCommit = true;
+                if (inst->SSN <= cpu->getRetireSSN()){
+                  return load_fault;
+                }
+              }
+              inst->delayUntilCommit = false;
               inst->SSN  = cpu->getRetireSSN();
               inst->translationStarted(false);
               inst->translationCompleted(false);
@@ -1244,6 +1252,7 @@ LSQUnit<Impl>::removeMSHR(InstSeqNum seqNum)
         DPRINTF(LSQUnit, "Removing MSHR. count = %i\n",mshrSeqNums.size());
     }
 }*/
+
 
 template <class Impl>
 void
