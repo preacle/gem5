@@ -886,7 +886,7 @@ LSQUnit<Impl>::executeLoad(DynInstPtr &inst)
               if (this->checkMemVio(inst->effAddr,inst->effSize,inst->bpeffAddr,inst->bpeffSize)){
                 inst->haveVio = true;
                 inst->delayUntilCommit = true;
-                if (inst->SSN <= cpu->getRetireSSN()){
+                if (inst->SSN > cpu->getRetireSSN()){
                   return load_fault;
                 }
               }

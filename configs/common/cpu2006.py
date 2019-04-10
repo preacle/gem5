@@ -2,9 +2,9 @@ import m5
 from m5.objects import *
 m5.util.addToPath('../common')
 
-binary_dir = '/home/chengjian/CPU2006/'
-data_dir = '/home/chengjian/CPU2006/'
-output_dir = '/home/chengjian/CPU2006/'
+binary_dir = '/home/ligangyi/thesis/CPU2006/'
+data_dir = '/home/ligangyi/thesis/CPU2006/'
+output_dir = '/home/ligangyi/thesis/CPU2006/'
 #====================
 #400.perlbench
 perlbench = Process()
