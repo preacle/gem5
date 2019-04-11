@@ -15,15 +15,17 @@ class SVW{
   public:
     typedef typename Impl::DynInstPtr DynInstPtr;
   public:
-    int depCheckShift = 0;
+    int depCheckShift = 3;
     class svwItem{
         public:
             bool VAILD;
             SVWTag_t TAG;
             SVWStoreSeqNum_t SSN;
             uint64_t PC;
-        svwItem(bool valid,SVWTag_t tag,SVWStoreSeqNum_t ssn, uint64_t pc)
-        :VAILD(valid),TAG(tag),SSN(ssn),PC(pc){}
+            uint64_t mask;
+        svwItem(bool valid,SVWTag_t tag,SVWStoreSeqNum_t ssn, uint64_t pc
+          , uint64_t mk)
+        :VAILD(valid),TAG(tag),SSN(ssn),PC(pc),mask(mk){}
     };
     vector<list<svwItem> > svwItems;
     uint64_t size;
@@ -31,37 +33,52 @@ class SVW{
 public:
     SVW(size_t sz,size_t assoc):size(sz),assoc(assoc){
         svwItems = vector<list<svwItem>>
-          (sz,list<svwItem> (assoc,svwItem(0,0,0,0)));
+          (sz,list<svwItem> (assoc,svwItem(0,0,0,0,0)));
     }
 
+    uint64_t calMaskForSVW(uint64_t addr, uint64_t sz){
+      uint64_t mask = 0;
+      uint64_t startAddr = addr%8;
+      for (int i=0;i<sz;i++){
+        mask += 1<<(i+1+startAddr);
+      }
+      return mask;
+    }
 
-    void insert(SVWKey_t key, SVWTag_t tag, SVWStoreSeqNum_t ssn, uint64_t pc){
+    void insert(SVWKey_t key, SVWTag_t tag, SVWStoreSeqNum_t ssn, uint64_t pc, uint64_t mk){
         svwItems[key].pop_back();
-        svwItems[key].push_front(svwItem(true,tag,ssn,pc));
+        svwItems[key].push_front(svwItem(true,tag,ssn,pc,mk));
     }
 
     bool insert(DynInstPtr &inst){
 //      std::cout<<"insert SVW:"<<inst->gSSN<<" "<<inst->effAddr<<" "<<inst->effSize;inst->dump();
-      if (inst->effAddr == 0||inst->effSize == 0)
+      if (inst->effAddr == 0||inst->effSize == 0){
         return false;
+      }
       auto inst_eff_addr1 = inst->effAddr >> depCheckShift;
       auto inst_eff_addr2 =
         (inst->effAddr + inst->effSize - 1) >> depCheckShift;
       for (auto addr = inst_eff_addr1; addr <= inst_eff_addr2; addr++){
 //        std::cout<<"insert SVW:addr"<<addr<<std::endl;
+        uint64_t startAddr =
+          max(inst_eff_addr1<<depCheckShift,inst->effAddr);
+        uint64_t endAddr =
+          min((inst_eff_addr1<<depCheckShift)+7,inst->effAddr+inst->effSize-1);
+        uint64_t sz = endAddr - startAddr + 1;
+        uint64_t mask = calMaskForSVW(startAddr,sz);
         SVWKey_t key = addr % size;
         SVWTag_t tag = addr / size;
         uint64_t trueIdx = inst->pcState().pc();
         //((inst->pcState().pc() >> 1)<<4)+inst->microPC()%16;
-        insert(key,tag,inst->SSN,trueIdx);
+        insert(key,tag,inst->SSN,trueIdx,mask);
       }
         return true;
     }
 
-    pair<SVWStoreSeqNum_t,uint64_t> search(SVWKey_t key,SVWTag_t tag){
+    pair<SVWStoreSeqNum_t,uint64_t> search(SVWKey_t key,SVWTag_t tag, uint64_t mask){
         SVWStoreSeqNum_t ret = 0;
         for (auto i:svwItems[key]){
-            if (i.VAILD && i.TAG == tag){
+            if (i.VAILD && i.TAG == tag && (i.mask&mask)){
                 return pair<SVWStoreSeqNum_t,uint64_t>(i.SSN,i.PC);
             }else{
                 ret = i.SSN;
@@ -79,9 +96,15 @@ public:
       auto inst_eff_addr2 =
         (inst->effAddr + inst->effSize - 1) >> depCheckShift;
       for (auto addr = inst_eff_addr1; addr <= inst_eff_addr2; addr++){
+        uint64_t startAddr =
+          max((inst_eff_addr1<<depCheckShift),inst->effAddr);
+        uint64_t endAddr =
+          min((inst_eff_addr1<<depCheckShift)+7,inst->effAddr+inst->effSize-1);
+        uint64_t sz = endAddr - startAddr + 1;
+        uint64_t mask = calMaskForSVW(startAddr,sz);
         SVWKey_t key = addr % size;
         SVWTag_t tag = addr / size;
-        pair<SVWStoreSeqNum_t,uint64_t> ret = search(key, tag);
+        pair<SVWStoreSeqNum_t,uint64_t> ret = search(key, tag, mask);
         SVWStoreSeqNum_t ssn = ret.first;
         if (inst->isBypassed() && inst->SSN == ssn){
           if (ret.second){ //有可能ＰＣ为0，TODO
