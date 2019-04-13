@@ -12,7 +12,7 @@ public:
     uint64_t tag;   // tag
     uint64_t value; // SSN差
     uint64_t c;     // 置信度
-    uint64_t v;     // 有效位
+    int v;     // 有效位
     uint64_t pc;
     uint64_t pc_c;
     bool delayUntilCommit;
@@ -22,10 +22,10 @@ public:
 //        predItem(uint64_t t, uint64_t val, uint64_t c, uint64_t v):
 //          tag(t),value(val),c(c),v(v){}
 
-        void insert(uint64_t insertTag,uint64_t insertVal,uint64_t insertPC){
+        void insert(uint64_t insertTag,uint64_t insertVal,uint64_t insertPC,int pow){
                if (tag == insertTag){
                     delayUntilCommit = false;
-                    v = 1;
+                    v = min(3,v+pow);
                     if (value == insertVal && insertPC != 0){
                         // std::cout<<"insert:1"<<std::endl;
                         c = (63 == c)?63:c+1;
@@ -45,11 +45,11 @@ public:
                       pc_c = 1;
                     }
                 }else{
-                   if (v == 1){
-                      v = 0;
+                   if (v >= pow){
+                      v = v - pow;
                    }else{
                       delayUntilCommit = false;
-                      v = 1;
+                      v = pow;
                       tag = insertTag;
                       value = insertVal;
                       c = 1;
@@ -59,10 +59,10 @@ public:
                 }
         }
 
-        void delay(uint64_t insertTag,uint64_t insertVal,uint64_t insertPC){
+        void delay(uint64_t insertTag,uint64_t insertVal,uint64_t insertPC,int pow){
           if (tag == insertTag){
                delayUntilCommit = true;
-               v = 1;
+               v = min(3,v+pow);
                if (value == insertVal && insertPC != 0){
                    // std::cout<<"insert:1"<<std::endl;
                    c = (8 == c)?8:c+1;
@@ -82,11 +82,11 @@ public:
                  pc_c = 1;
                }
            }else{
-              if (v == 1){
-                 v = 0;
+              if (v >= pow){
+                 v = v - pow;
               }else{
                 delayUntilCommit = true;
-                 v = 1;
+                 v = pow;
                  tag = insertTag;
                  value = insertVal;
                  c = 1;
@@ -122,7 +122,7 @@ public:
       for (int i=0;i!=sz;i++) table0[i] = new predItem();
       for (int i=0;i!=sz;i++) table1[i] = new predItem();
     }
-    bool insertLoad(uint64_t pc, uint64_t pc_v, uint64_t val,uint64_t history){
+    bool insertLoad(uint64_t pc, uint64_t pc_v, uint64_t val,uint64_t history,int pow){
         if (val >= 30){
           uint64_t idx0 = (pc>>1) % PREDSIZE;
           uint64_t tag0 = (pc>>1) / PREDSIZE;
@@ -137,16 +137,16 @@ public:
         // std::cout<<"insert: pc"<<pc<<" pc_v"<<pc_v<<" val"<<val<<" history"<<history<<std::endl;
         uint64_t idx0 = (pc>>1) % PREDSIZE;
         uint64_t tag0 = (pc>>1) / PREDSIZE;
-        table0[idx0]->insert(tag0,val,pc_v);
+        table0[idx0]->insert(tag0,val,pc_v,pow);
 
         uint64_t idx1 = ((pc>>1)^(pc>>9)^history)% PREDSIZE;
         uint64_t tag1 = ((pc)^(pc>>11)^history)% PREDSIZE;
-        table1[idx1]->insert(tag1,val,pc_v);
+        table1[idx1]->insert(tag1,val,pc_v,pow);
 
         return true;
     }
 
-    bool delay(uint64_t pc, uint64_t pc_v, uint64_t val,uint64_t history){
+    bool delay(uint64_t pc, uint64_t pc_v, uint64_t val,uint64_t history,int pow){
         if (val >= 20){
           return true;
         }
@@ -154,11 +154,11 @@ public:
         // std::cout<<"insert: pc"<<pc<<" pc_v"<<pc_v<<" val"<<val<<" history"<<history<<std::endl;
         uint64_t idx0 = (pc>>1) % PREDSIZE;
         uint64_t tag0 = (pc>>1) / PREDSIZE;
-        table0[idx0]->delay(tag0,val,pc_v);
+        table0[idx0]->delay(tag0,val,pc_v,pow);
 
         uint64_t idx1 = ((pc>>1)^(pc>>9)^history)% PREDSIZE;
         uint64_t tag1 = ((pc)^(pc>>11)^history)% PREDSIZE;
-        table1[idx1]->delay(tag1,val,pc_v);
+        table1[idx1]->delay(tag1,val,pc_v,pow);
 
         return true;
     }

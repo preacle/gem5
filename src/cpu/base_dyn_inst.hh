@@ -176,6 +176,7 @@ class BaseDynInst : public ExecContext, public RefCounted
     bool lvp_v = false;
 
     uint64_t needsap = 0;
+    int squashNum = 0;
     bool sap_v = false;
 
     bool needDelay =  false;

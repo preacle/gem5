@@ -528,9 +528,13 @@ ROB<Impl>::doReexcute(ThreadID tid)
     int cntReexcuteNum = 0;
     if (instList[tid].empty())
       return;
+    int curIndex = instList[tid].size();
     while (head_it != instList[tid].end()) {
+       curIndex --;
        DynInstPtr inst = *head_it;
        //std::cout<<"reex:"<<inst->seqNum<<" ";inst->dump();
+       inst->squashNum = max(inst->squashNum,curIndex/8+1);
+       inst->squashNum = min(3,inst->squashNum/8+1);
        head_it++;
 
        if (cntReexcuteNum == MRN){
