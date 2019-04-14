@@ -851,7 +851,7 @@ InstructionQueue<Impl>::scheduleReadyInsts()
           std::cout<<issuing_inst->SSN<<" store:inst";issuing_inst->dump();
         }
 
-         if (issuing_inst->isLoad()&&!issuing_inst->isExecuted()){
+         if (issuing_inst->isLoad()&&!issuing_inst->isExecuted()&&issuing_inst->diffSSN!=0){
 
           // ThreadID tid = issuing_inst->threadNumber;
           // memDepUnit[tid].issue(issuing_inst);
@@ -897,7 +897,7 @@ InstructionQueue<Impl>::scheduleReadyInsts()
             continue;
           }
 
-           if (issuing_inst->BypassInst&&!issuing_inst->BypassInst->readyToCommit()){
+           if (issuing_inst->BypassInst&&!issuing_inst->BypassInst->v_saved_value){
              readyInsts[op_class].pop();
              if (!readyInsts[op_class].empty()) {
                  moveToYoungerInst(order_it);
@@ -910,6 +910,7 @@ InstructionQueue<Impl>::scheduleReadyInsts()
              deferMemInst(issuing_inst);
              continue;
            }
+
           if (issuing_inst->gSSN > cpu->reexSSN + 30){
             readyInsts[op_class].pop();
             if (!readyInsts[op_class].empty()) {
@@ -922,6 +923,7 @@ InstructionQueue<Impl>::scheduleReadyInsts()
             deferMemInst(issuing_inst);
             continue;
           }
+
         }
 //        if (issuing_inst->isStore()){
 //        }

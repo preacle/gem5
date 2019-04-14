@@ -70,13 +70,13 @@ class PCState : public GenericISA::UPCState<MachInst>
     branching() const
     {
         if (_compressed) {
-    //    std::cout<<"_compressed:T pc:"<<pc()
-    //    <<" npc:"<<npc()<<" size:"<<sizeof(MachInst)/2;
+//        std::cout<<"_compressed:T pc:"<<pc()
+//        <<" npc:"<<npc()<<" size:"<<sizeof(MachInst)/2;
             return npc() != pc() + sizeof(MachInst)/2 ||
                     nupc() != upc() + 1;
         } else {
-    //      std::cout<<"_compressed:F pc:"<<pc()
-    //      <<" npc:"<<npc()<<" size:"<<sizeof(MachInst);
+//          std::cout<<"_compressed:F pc:"<<pc()
+//          <<" npc:"<<npc()<<" size:"<<sizeof(MachInst);
             return npc() != pc() + sizeof(MachInst) ||
                     nupc() != upc() + 1;
         }

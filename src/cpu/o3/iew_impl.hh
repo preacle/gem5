@@ -1324,7 +1324,7 @@ DefaultIEW<Impl>::executeInsts()
                 }
                 if (inst->BypassInst
                   //&&inst->BypassInst->readPredicate()
-                  &&!inst->BypassInst->readyToCommit())
+                  &&!inst->BypassInst->v_saved_value)
                 {
                   DPRINTF(IEW, "Execute: Delayed translation, deferring "
                           "load  PC %s, [sn:%lli].\n",

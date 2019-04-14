@@ -224,9 +224,12 @@ public:
               return true;
             }
           }
-          val = table1[idx1]->value;
-          c = table1[idx1]->c;
-          return true;
+          if (pclink[pc_idx][0] && pclink[pc_idx][1] == pc_tag){
+              val = table1[idx1]->value;
+              c = table1[idx1]->c;
+              return true;
+          }
+          return false;
         }
         else{
           delayUntilCommit = table0[idx0]->delayUntilCommit;
@@ -255,9 +258,12 @@ public:
               return true;
             }
           }
-          val = table0[idx0]->value;
-          c = table0[idx0]->c;
-          return true;
+          if (pclink[pc_idx][0] && pclink[pc_idx][1] == pc_tag){
+              val = table0[idx0]->value;
+              c = table0[idx0]->c;
+              return true;
+          }
+          return false;
         }
     }
     void insertStore(uint64_t trueIdx,uint64_t ssn){

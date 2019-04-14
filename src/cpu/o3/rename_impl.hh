@@ -372,9 +372,9 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
   //因为ARM的存储结果太复杂,
   //所以采用指令相关的方法,而不采用寄存器重命名
 
-//  std::cout<<"mergeInst: "<<dest->seqNum<<std::endl;
-//  dest->dump();
-//  src->dump();
+  std::cout<<"mergeInst: "<<dest->seqNum<<std::endl;
+  dest->dump();
+  src->dump();
   dest->SSN = src->SSN;
   RenameMap *map = renameMap[tid];
 
@@ -444,8 +444,9 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
       dest->bpeffAddr = src->effAddr;
       dest->setBypassed();
 
-      if (dest->isInteger()){
+      if (!dest->isFloating()){
         //IntReg value = dest->getIntRegMem();
+        //std::cout<<"setInt1"<<std::endl;
         if (!dest->isUint){
           bool flag = (1<<(8*dest->effSize-1))&value;
           if (flag){
@@ -455,9 +456,12 @@ mergeInsts(DynInstPtr& dest, DynInstPtr& src, ThreadID tid)
           }
         }
         dest->setIntRegOperand(dest->staticInst.get(), 0, value);
+        //std::cout<<"setInt2"<<std::endl;
       }else{
+        //std::cout<<"setFloat1"<<std::endl;
         //FloatReg value = dest->getFloatRegMem();
         dest->setFloatRegOperand(dest->staticInst.get(), 0, value);
+        //std::cout<<"setFloat2"<<std::endl;
       }
       return ;
     }
